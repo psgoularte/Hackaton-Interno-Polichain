@@ -21,7 +21,7 @@ const hardhatChain = {
 
 export const config = getDefaultConfig({
   appName: "Meu App Web3",
-  projectId: "05163c13184a2c903892854830ae6b2a", //ID do seu projeto, lembrar de atualizar
+  projectId: "25aacf32f3a69cb2accbbde68772321a", //ID do seu projeto, lembrar de atualizar
   chains: [sepolia, hardhat],
   ssr: true,
 });
