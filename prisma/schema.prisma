@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,8 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Item {
-  id        Int        @id @default(autoincrement())
-  name      String
-  code      Int        @unique
+model Raffle {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(255)
+  content     String?  @db.Text
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  coverImageUrl String @db.VarChar(512)
+  coverImageId  String @db.VarChar(512)
+
+  @@map("Raffle") // Nome da tabela no banco
 }
