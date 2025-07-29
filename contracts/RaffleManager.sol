@@ -10,7 +10,7 @@ contract AutoRaffle {
     uint256 public endTime;
     uint256 public minParticipants;
     uint256 public minParticipantsDeadline;
-    uint256 public maxTickets; // Novo parâmetro: limite máximo de tickets
+    uint256 public maxTickets;
     
     uint256 public totalTicketsSold;
     mapping(address => uint256) public ticketsBought;

@@ -55,6 +55,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validação razoável (máx 10.000 caracteres)
+    if (content && content.length > 10000) {
+      return NextResponse.json(
+        { error: "Content too long (max 10000 characters)" },
+        { status: 400 }
+      );
+    }
+
     // 1. Upload to Vercel Blob
     const { url, pathname } = await put(file.name, file, { access: "public" });
     blobId = pathname;
@@ -99,6 +107,14 @@ export async function PUT(request: Request) {
     if (!id || !title) {
       return NextResponse.json(
         { error: "ID and title are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validação razoável (máx 10.000 caracteres)
+    if (content && content.length > 10000) {
+      return NextResponse.json(
+        { error: "Content too long (max 10000 characters)" },
         { status: 400 }
       );
     }
