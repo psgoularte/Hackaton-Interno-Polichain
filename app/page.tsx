@@ -25,7 +25,7 @@ export default async function HomePage() {
                 </span>
               </h1>
               <p className="text-xl text-muted-foreground max-w-3xl mb-8 text-left">
-                Join the future of raffles with blockchain technology. Create, participate, and win in a transparent and
+                Join the future of fundraising with blockchain technology. Create, participate, and win in a transparent and
                 secure environment.
               </p>
             </div>
