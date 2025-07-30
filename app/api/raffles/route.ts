@@ -18,6 +18,20 @@ function handleError(error: unknown, context: string) {
   );
 }
 
+// Validação de carteira cripto (suporta Ethereum, Solana, Bitcoin)
+function validateCryptoWallet(wallet: string): boolean {
+  // Ethereum (0x...) - 42 caracteres
+  if (/^0x[a-fA-F0-9]{40}$/.test(wallet)) return true;
+
+  // Solana (base58) - 32-44 caracteres
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(wallet)) return true;
+
+  // Bitcoin (1, 3, bc1) - 25-62 caracteres
+  if (/^(1|3|bc1)[a-zA-HJ-NP-Z0-9]{25,62}$/.test(wallet)) return true;
+
+  return false;
+}
+
 // GET - List all raffles
 export async function GET() {
   try {
@@ -39,12 +53,23 @@ export async function POST(request: Request) {
     const title = formData.get("title")?.toString()?.trim();
     const content = formData.get("content")?.toString()?.trim();
     const category = formData.get("category")?.toString()?.trim();
+    const wallet = formData.get("wallet")?.toString()?.trim();
     const file = formData.get("file") as File | null;
 
     // Validation
     if (!title || title.length < 3) {
       return NextResponse.json(
         { error: "Title is required and must be at least 3 characters" },
+        { status: 400 }
+      );
+    }
+
+    if (!wallet || !validateCryptoWallet(wallet)) {
+      return NextResponse.json(
+        {
+          error:
+            "Valid crypto wallet address is required (supports Ethereum, Solana, Bitcoin formats)",
+        },
         { status: 400 }
       );
     }
@@ -79,7 +104,8 @@ export async function POST(request: Request) {
       data: {
         title,
         content: content || null,
-        category: category || "general", // Valor padrão se não fornecido
+        category: category || "general",
+        wallet, // Novo campo
         coverImageUrl: url,
         coverImageId: pathname,
       },
@@ -110,6 +136,7 @@ export async function PUT(request: Request) {
     const title = formData.get("title")?.toString()?.trim();
     const content = formData.get("content")?.toString()?.trim();
     const category = formData.get("category")?.toString()?.trim();
+    const wallet = formData.get("wallet")?.toString()?.trim();
     const file = formData.get("file") as File | null;
 
     // Validate required fields
@@ -122,8 +149,16 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Invalid raffle ID" }, { status: 400 });
     }
 
+    // Validate wallet format if provided
+    if (wallet && !validateCryptoWallet(wallet)) {
+      return NextResponse.json(
+        { error: "Invalid crypto wallet address format" },
+        { status: 400 }
+      );
+    }
+
     // Validate at least one field is being updated
-    if (!title && !content && !category && !file) {
+    if (!title && !content && !category && !wallet && !file) {
       return NextResponse.json(
         { error: "At least one field must be provided for update" },
         { status: 400 }
@@ -182,6 +217,7 @@ export async function PUT(request: Request) {
       title?: string;
       content?: string | null;
       category?: string;
+      wallet?: string;
       coverImageUrl?: string;
       coverImageId?: string;
     } = {};
@@ -190,6 +226,7 @@ export async function PUT(request: Request) {
     if (title !== undefined) updateData.title = title;
     if (content !== undefined) updateData.content = content || null;
     if (category !== undefined) updateData.category = category;
+    if (wallet !== undefined) updateData.wallet = wallet;
     if (file) {
       updateData.coverImageUrl = imageUrl;
       updateData.coverImageId = imageId;
