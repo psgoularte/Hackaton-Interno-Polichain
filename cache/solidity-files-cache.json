@@ -1,0 +1,40 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "C:\\Users\\sgoul\\Documents\\Projetos Hackatons\\polichain_interno\\contracts\\RaffleManager.sol": {
+      "lastModificationDate": 1753838805394,
+      "contentHash": "7edb269e6d0fdd8cd45334fb8ea6e5e6",
+      "sourceName": "contracts/RaffleManager.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "AutoRaffle"
+      ]
+    }
+  }
+}
