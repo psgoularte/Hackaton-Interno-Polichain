@@ -9,6 +9,7 @@ import { Search, ChevronDown, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { LogoSquare } from "@/components/logo-square"
 
 export function Navbar() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -36,10 +37,8 @@ export function Navbar() {
               <div className="flex items-center gap-0.5">
                 {/* Raffl text - moved closer to square */}
                 <span className="font-bold text-xl text-tertiary">Raffl</span>
-                {/* Pink square with white 3 - bigger 3, touching left side */}
-                <div className="h-6 w-6 rounded bg-tertiary flex items-center justify-start pl-0.5">
-                  <span className="text-white font-bold text-base leading-none">3</span>
-                </div>
+                {/* Pink square with white 3 - now using reusable component */}
+                <LogoSquare />
               </div>
             </Link>
           </div>

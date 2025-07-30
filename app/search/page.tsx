@@ -65,7 +65,11 @@ function SearchContent() {
       case "prize":
         return sorted.sort((a, b) => b.prizeAmount - a.prizeAmount)
       case "ending":
-        return sorted.sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime())
+        return sorted.sort((a, b) => {
+          const dateA = a.endDate ? new Date(a.endDate).getTime() : Date.now()
+          const dateB = b.endDate ? new Date(b.endDate).getTime() : Date.now()
+          return dateA - dateB
+        })
       default:
         return sorted // Keep original relevance order
     }

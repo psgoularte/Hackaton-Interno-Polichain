@@ -222,7 +222,13 @@ export async function getAboutToEndRaffles(): Promise<Raffle[]> {
   // Get all raffles and sort by end date (closest first)
   const allDraws = Object.values(backendData).flat()
 
-  return allDraws.sort((a, b) => new Date(a.endDate || "").getTime() - new Date(b.endDate || "").getTime()).slice(0, 6)
+  return allDraws
+    .sort((a, b) => {
+      const dateA = a.endDate ? new Date(a.endDate).getTime() : Date.now()
+      const dateB = b.endDate ? new Date(b.endDate).getTime() : Date.now()
+      return dateA - dateB
+    })
+    .slice(0, 6)
 }
 
 export async function getFeaturedRaffles(): Promise<Raffle[]> {
