@@ -38,6 +38,7 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const title = formData.get("title")?.toString()?.trim();
     const content = formData.get("content")?.toString()?.trim();
+    const category = formData.get("category")?.toString()?.trim();
     const file = formData.get("file") as File | null;
 
     // Validation
@@ -55,7 +56,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validação razoável (máx 10.000 caracteres)
+    if (category && category.length > 16) {
+      return NextResponse.json(
+        { error: "Category must be 16 characters or less" },
+        { status: 400 }
+      );
+    }
+
     if (content && content.length > 10000) {
       return NextResponse.json(
         { error: "Content too long (max 10000 characters)" },
@@ -72,6 +79,7 @@ export async function POST(request: Request) {
       data: {
         title,
         content: content || null,
+        category: category || "general", // Valor padrão se não fornecido
         coverImageUrl: url,
         coverImageId: pathname,
       },
@@ -91,7 +99,7 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT - Update existing raffle
+// PUT - Update existing raffle (with optional fields)
 export async function PUT(request: Request) {
   let newBlobId: string | null = null;
   let oldBlobId: string | null = null;
@@ -101,27 +109,47 @@ export async function PUT(request: Request) {
     const id = formData.get("id")?.toString();
     const title = formData.get("title")?.toString()?.trim();
     const content = formData.get("content")?.toString()?.trim();
+    const category = formData.get("category")?.toString()?.trim();
     const file = formData.get("file") as File | null;
 
-    // Validation
-    if (!id || !title) {
-      return NextResponse.json(
-        { error: "ID and title are required" },
-        { status: 400 }
-      );
-    }
-
-    // Validação razoável (máx 10.000 caracteres)
-    if (content && content.length > 10000) {
-      return NextResponse.json(
-        { error: "Content too long (max 10000 characters)" },
-        { status: 400 }
-      );
+    // Validate required fields
+    if (!id) {
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
     const raffleId = parseInt(id);
     if (isNaN(raffleId)) {
       return NextResponse.json({ error: "Invalid raffle ID" }, { status: 400 });
+    }
+
+    // Validate at least one field is being updated
+    if (!title && !content && !category && !file) {
+      return NextResponse.json(
+        { error: "At least one field must be provided for update" },
+        { status: 400 }
+      );
+    }
+
+    // Validate field lengths
+    if (title && title.length < 3) {
+      return NextResponse.json(
+        { error: "Title must be at least 3 characters" },
+        { status: 400 }
+      );
+    }
+
+    if (category && category.length > 16) {
+      return NextResponse.json(
+        { error: "Category must be 16 characters or less" },
+        { status: 400 }
+      );
+    }
+
+    if (content && content.length > 10000) {
+      return NextResponse.json(
+        { error: "Content too long (max 10000 characters)" },
+        { status: 400 }
+      );
     }
 
     // Get existing raffle
@@ -135,11 +163,12 @@ export async function PUT(request: Request) {
 
     oldBlobId = existing.coverImageId;
 
-    // Handle image update if new file provided
+    // Handle image update
     let imageUrl = existing.coverImageUrl;
     let imageId = existing.coverImageId;
 
     if (file) {
+      // Upload new image
       const { url, pathname } = await put(file.name, file, {
         access: "public",
       });
@@ -148,15 +177,28 @@ export async function PUT(request: Request) {
       imageId = pathname;
     }
 
+    // Prepare update data
+    const updateData: {
+      title?: string;
+      content?: string | null;
+      category?: string;
+      coverImageUrl?: string;
+      coverImageId?: string;
+    } = {};
+
+    // Only include fields that were provided
+    if (title !== undefined) updateData.title = title;
+    if (content !== undefined) updateData.content = content || null;
+    if (category !== undefined) updateData.category = category;
+    if (file) {
+      updateData.coverImageUrl = imageUrl;
+      updateData.coverImageId = imageId;
+    }
+
     // Update in database
     const updated = await prisma.raffle.update({
       where: { id: raffleId },
-      data: {
-        title,
-        content: content || null,
-        coverImageUrl: imageUrl,
-        coverImageId: imageId,
-      },
+      data: updateData,
     });
 
     // Delete old blob if new one was uploaded

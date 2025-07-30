@@ -3,13 +3,12 @@ pragma solidity ^0.8.0;
 
 contract AutoRaffle {
     address public owner;
-    address public platform = 0x0fadE5b267b572dc1F002d1b9148976cCCE9C8C8; // Endereço da plataforma
+    address public platform = 0x0fadE5b267b572dc1F002d1b9148976cCCE9C8C8;
     string public prizeDescription;
     uint256 public ticketPrice;
     uint256 public prizeValue;
     uint256 public endTime;
     uint256 public minParticipants;
-    uint256 public minParticipantsDeadline;
     uint256 public maxTickets;
     
     uint256 public totalTicketsSold;
@@ -34,7 +33,6 @@ contract AutoRaffle {
         uint256 _ticketPrice,
         uint256 _prizeValue,
         uint256 _duration,
-        uint256 _minParticipantsDuration,
         uint256 _maxTickets
     ) {
         require(_ticketPrice > 0, "Ticket price must be greater than 0");
@@ -42,18 +40,24 @@ contract AutoRaffle {
         require(_duration > 0, "Duration must be greater than 0");
         require(_maxTickets > 0, "Max tickets must be greater than 0");
         
+        // Cálculo automático do mínimo de participantes: (prizeValue * 110%) / ticketPrice
+        minParticipants = (_prizeValue * 11 + (_ticketPrice * 10) - 1) / (_ticketPrice * 10);
+        
+        // Nova validação: maxTickets não pode ser menor que minParticipants
+        require(
+            _maxTickets >= minParticipants,
+            "Max tickets cannot be less than minimum participants"
+        );
+        
         owner = msg.sender;
         prizeDescription = _prizeDescription;
         ticketPrice = _ticketPrice;
         prizeValue = _prizeValue;
         endTime = block.timestamp + _duration;
-        minParticipantsDeadline = block.timestamp + _minParticipantsDuration;
         maxTickets = _maxTickets;
         state = RaffleState.Active;
-        
-        // Cálculo automático do mínimo de participantes: (prizeValue * 110%) / ticketPrice
-        minParticipants = (_prizeValue * 11 + (_ticketPrice * 10) - 1) / (_ticketPrice * 10);
     }
+    
     
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
@@ -86,11 +90,6 @@ contract AutoRaffle {
             _completeRaffle();
             return;
         }
-        
-        // Finaliza antecipadamente se o mínimo foi atingido durante o período inicial
-        if (totalTicketsSold >= minParticipants && block.timestamp < minParticipantsDeadline) {
-            minParticipantsDeadline = block.timestamp;
-        }
     }
     
     function cancelRaffle() external onlyOwner onlyActive {
@@ -122,7 +121,7 @@ contract AutoRaffle {
         require(block.timestamp >= endTime, "Raffle has not ended yet");
         require(state == RaffleState.Active, "Raffle already finalized");
         
-        if (totalTicketsSold >= minParticipants || block.timestamp >= minParticipantsDeadline) {
+        if (totalTicketsSold >= minParticipants) {
             _completeRaffle();
         } else {
             _refundRaffle();
@@ -130,34 +129,38 @@ contract AutoRaffle {
     }
     
     function _completeRaffle() internal {
-        // Sorteia o vencedor
-        uint256 randomNumber = uint256(keccak256(abi.encodePacked(
-            blockhash(block.number - 1), 
-            block.timestamp,
-            totalTicketsSold
-        )));
-        uint256 winningTicket = randomNumber % totalTicketsSold;
-        winner = _determineWinner(winningTicket);
-        
-        // Transfere o prêmio
-        (bool success, ) = winner.call{value: prizeValue}("");
-        require(success, "Prize transfer failed");
-        
-        // Calcula os lucros (total - prêmio)
-        uint256 totalProfit = address(this).balance;
-        
-        // Plataforma recebe 10%
-        uint256 platformFee = totalProfit * 10 / 100;
-        (success, ) = platform.call{value: platformFee}("");
-        require(success, "Platform transfer failed");
-        
-        // Dono recebe os 90% restantes
-        uint256 ownerProfit = address(this).balance;
-        (success, ) = owner.call{value: ownerProfit}("");
-        require(success, "Owner transfer failed");
-        
-        state = RaffleState.Completed;
-        emit RaffleCompleted(winner, prizeValue, ownerProfit, platformFee);
+    // Sorteia o vencedor
+    uint256 randomNumber = uint256(
+        keccak256(
+            abi.encodePacked(
+                blockhash(block.number - 1),
+                block.timestamp,
+                totalTicketsSold
+            )
+        )
+    );
+    uint256 winningTicket = randomNumber % totalTicketsSold;
+    winner = _determineWinner(winningTicket);
+    
+    // Transfere o prêmio
+    (bool success, ) = winner.call{value: prizeValue}("");
+    require(success, "Prize transfer failed");
+    
+    // Calcula os lucros (total - prêmio)
+    uint256 totalProfit = address(this).balance;
+    
+    // Plataforma recebe 10%
+    uint256 platformFee = totalProfit * 10 / 100;
+    (success, ) = platform.call{value: platformFee}("");
+    require(success, "Platform transfer failed");
+    
+    // Dono recebe os 90% restantes
+    uint256 ownerProfit = address(this).balance;
+    (success, ) = owner.call{value: ownerProfit}("");
+    require(success, "Owner transfer failed");
+    
+    state = RaffleState.Completed;
+    emit RaffleCompleted(winner, prizeValue, ownerProfit, platformFee);
     }
     
     function _refundRaffle() internal {

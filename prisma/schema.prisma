@@ -10,6 +10,7 @@ datasource db {
 model Raffle {
   id          Int      @id @default(autoincrement())
   title       String   @db.VarChar(255)
+  category    String   @db.VarChar(16)
   content     String?  @db.Text
   createdAt   DateTime @default(now()) @db.Timestamptz(6)
   coverImageUrl String @db.VarChar(512)
