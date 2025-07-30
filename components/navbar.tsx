@@ -11,15 +11,15 @@ export function Navbar() {
     <nav className="w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
       <div className="w-full px-6 sm:px-8 lg:px-12">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo/Brand Name - Added left padding */}
+          {/* Logo/Brand Name - Updated styling */}
           <div className="flex items-center pl-2">
             <Link href="/" className="flex items-center">
-              <div className="flex items-center">
-                {/* Raffl text */}
-                <span className="font-bold text-xl text-tertiary mr-1">Raffl</span>
-                {/* Pink square with white 3 */}
-                <div className="h-6 w-6 rounded bg-tertiary flex items-center justify-center">
-                  <span className="text-white font-bold text-sm leading-none ml-0.5">3</span>
+              <div className="flex items-center gap-0.5">
+                {/* Raffl text - moved closer to square */}
+                <span className="font-bold text-xl text-tertiary">Raffl</span>
+                {/* Pink square with white 3 - bigger 3, touching left side */}
+                <div className="h-6 w-6 rounded bg-tertiary flex items-center justify-start pl-0.5">
+                  <span className="text-white font-bold text-base leading-none">3</span>
                 </div>
               </div>
             </Link>
@@ -83,7 +83,7 @@ export function Navbar() {
             </div>
           </div>
 
-          {/* Create Raffle Button - Added right padding */}
+          {/* Create Raffle Button */}
           <div className="flex items-center pr-2">
             <Link href="/create">
               <Button className="flex items-center space-x-2 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90">
