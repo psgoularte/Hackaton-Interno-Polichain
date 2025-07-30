@@ -22,7 +22,8 @@ export function RaffleGrid({ raffles, title, showTitle = true }: RaffleGridProps
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-left mb-12 text-tertiary">{title}</h1>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Responsive Grid with Better Spacing */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {raffles.map((raffle) => (
           <RaffleCard key={raffle.id} {...raffle} />
         ))}

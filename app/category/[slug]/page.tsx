@@ -9,7 +9,8 @@ const categoryNames: Record<string, string> = {
   studies: "Studies",
   health: "Health",
   animals: "Animals",
-  ngos: "NGO's",
+  ngos: "NGOs",
+  others: "Others",
   "most-popular": "Most Popular",
   "about-to-end": "About to End",
 }

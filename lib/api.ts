@@ -159,6 +159,38 @@ const backendData: Record<string, Raffle[]> = {
       organizer: "Global Relief Network",
     },
   ],
+  others: [
+    {
+      id: "other-1",
+      title: "Community Garden Project",
+      image: "/placeholder.svg?height=200&width=300",
+      prizeAmount: 12,
+      currentAmount: 8.5,
+      targetAmount: 12,
+      minimumValue: 9,
+      ticketPrice: 0.25,
+      participants: 3400,
+      category: "Others",
+      description: "Creating green spaces for local communities",
+      endDate: "2024-04-18",
+      organizer: "Green Community Initiative",
+    },
+    {
+      id: "other-2",
+      title: "Local Arts Festival Support",
+      image: "/placeholder.svg?height=200&width=300",
+      prizeAmount: 8,
+      currentAmount: 6.2,
+      targetAmount: 8,
+      minimumValue: 5.5,
+      ticketPrice: 0.15,
+      participants: 4133,
+      category: "Others",
+      description: "Supporting local artists and cultural events",
+      endDate: "2024-04-12",
+      organizer: "Arts Community Collective",
+    },
+  ],
 }
 
 export async function getRafflesByCategory(category: string): Promise<Raffle[]> {
@@ -196,4 +228,38 @@ export async function getAboutToEndRaffles(): Promise<Raffle[]> {
 export async function getFeaturedRaffles(): Promise<Raffle[]> {
   // For homepage, return a mix of popular draws from different categories
   return getMostPopularRaffles()
+}
+
+// Enhanced search function with better filtering
+export async function searchRaffles(query: string): Promise<Raffle[]> {
+  // Simulate API delay
+  await new Promise((resolve) => setTimeout(resolve, 300))
+
+  // Get all raffles from all categories
+  const allDraws = Object.values(backendData).flat()
+
+  // Convert query to lowercase for case-insensitive search
+  const searchTerm = query.toLowerCase().trim()
+
+  // Filter raffles based on search criteria
+  const filteredRaffles = allDraws.filter((raffle) => {
+    return (
+      raffle.title.toLowerCase().includes(searchTerm) ||
+      raffle.description.toLowerCase().includes(searchTerm) ||
+      raffle.category.toLowerCase().includes(searchTerm) ||
+      raffle.organizer.toLowerCase().includes(searchTerm)
+    )
+  })
+
+  // Sort by relevance (title matches first, then by popularity)
+  return filteredRaffles.sort((a, b) => {
+    const aTitle = a.title.toLowerCase().includes(searchTerm)
+    const bTitle = b.title.toLowerCase().includes(searchTerm)
+
+    if (aTitle && !bTitle) return -1
+    if (!aTitle && bTitle) return 1
+
+    // If both or neither match title, sort by popularity
+    return b.participants - a.participants
+  })
 }

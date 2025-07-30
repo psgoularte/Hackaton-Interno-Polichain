@@ -240,7 +240,8 @@ export default function CreateRafflePage() {
                       <SelectItem value="studies">Studies</SelectItem>
                       <SelectItem value="health">Health</SelectItem>
                       <SelectItem value="animals">Animals</SelectItem>
-                      <SelectItem value="ngos">NGO's</SelectItem>
+                      <SelectItem value="ngos">NGOs</SelectItem>
+                      <SelectItem value="others">Others</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.category && (
