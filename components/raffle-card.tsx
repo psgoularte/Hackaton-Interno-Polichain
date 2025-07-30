@@ -6,7 +6,7 @@ import { ProgressBar } from "./progress-bar"
 import { Users, Ticket, Clock } from "lucide-react"
 import { useState, useEffect } from "react"
 
-interface PrizeDrawCardProps {
+interface RaffleCardProps {
   id: string
   title: string
   image: string
@@ -20,7 +20,7 @@ interface PrizeDrawCardProps {
   endDate?: string
 }
 
-export function PrizeDrawCard({
+export function RaffleCard({
   id,
   title,
   image,
@@ -32,7 +32,7 @@ export function PrizeDrawCard({
   participants,
   category,
   endDate = "2024-04-15T23:59:59",
-}: PrizeDrawCardProps) {
+}: RaffleCardProps) {
   const [timeLeft, setTimeLeft] = useState("")
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export function PrizeDrawCard({
   const displayImage = image || "/placeholder.svg?height=200&width=300&text=👋"
 
   return (
-    <Link href={`/prize-draw/${id}`}>
+    <Link href={`/raffle/${id}`}>
       <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 border-primary/20 hover:border-tertiary/40">
         <CardContent className="p-0">
           <div className="aspect-video relative overflow-hidden rounded-t-lg">
@@ -97,14 +97,15 @@ export function PrizeDrawCard({
             <div className="flex justify-between items-center mb-4">
               <div>
                 <div className="text-2xl font-bold text-primary group-hover:text-tertiary mb-1 transition-colors duration-300">
-                  ${prizeAmount.toLocaleString()}
+                  {prizeAmount.toLocaleString()} ETH
                 </div>
                 <div className="text-sm text-muted-foreground">Prize Amount</div>
               </div>
 
               <div className="text-right">
                 <div className="flex items-center gap-1 text-lg font-semibold text-secondary group-hover:text-tertiary transition-colors duration-300">
-                  <Ticket className="h-4 w-4" />${ticketPrice}
+                  <Ticket className="h-4 w-4" />
+                  {ticketPrice} ETH
                 </div>
                 <div className="text-sm text-muted-foreground">Per Ticket</div>
               </div>

@@ -14,6 +14,7 @@ const getPrizeDrawData = (id: string) => {
       prizeAmount: 50000,
       currentAmount: 35000,
       targetAmount: 50000,
+      minimumValue: 30000,
       category: "Health",
       description:
         "This prize draw aims to fund groundbreaking cancer research that could lead to new treatment methods and potentially save thousands of lives. The research will focus on innovative immunotherapy approaches.",
@@ -109,7 +110,12 @@ export default function PrizeDrawDetailPage({ params }: { params: { id: string }
                   <CardTitle className="text-lg">Funding Progress</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ProgressBar current={prizeData.currentAmount} target={prizeData.targetAmount} className="mb-4" />
+                  <ProgressBar
+                    current={prizeData.currentAmount}
+                    target={prizeData.targetAmount}
+                    minimumValue={prizeData.minimumValue}
+                    className="mb-4"
+                  />
                 </CardContent>
               </Card>
 
@@ -138,6 +144,14 @@ export default function PrizeDrawDetailPage({ params }: { params: { id: string }
                       <span className="text-muted-foreground">Organizer</span>
                     </div>
                     <span className="font-semibold text-sm">{prizeData.organizer}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Target className="h-5 w-5 text-primary mr-2" />
+                      <span className="text-muted-foreground">Minimum Goal</span>
+                    </div>
+                    <span className="font-semibold">${prizeData.minimumValue.toLocaleString()}</span>
                   </div>
                 </CardContent>
               </Card>

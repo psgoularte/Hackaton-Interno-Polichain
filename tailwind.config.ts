@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss"
 
 const config = {
-//  darkMode: ["class"],
+  darkMode: ["class"],
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -31,6 +31,10 @@ const config = {
         },
         secondary: {
           DEFAULT: "#16a34a", // Green-600
+          foreground: "#ffffff",
+        },
+        tertiary: {
+          DEFAULT: "#ec4899", // Pink-500
           foreground: "#ffffff",
         },
         destructive: {
