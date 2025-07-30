@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 contract AutoRaffle {
     address public owner;
     address public platform = 0x0fadE5b267b572dc1F002d1b9148976cCCE9C8C8;
-    string public prizeDescription;
     uint256 public ticketPrice;
     uint256 public prizeValue;
     uint256 public endTime;
@@ -29,7 +28,6 @@ contract AutoRaffle {
     event MaxTicketsReached(uint256 maxTickets);
     
     constructor(
-        string memory _prizeDescription,
         uint256 _ticketPrice,
         uint256 _prizeValue,
         uint256 _duration,
@@ -50,7 +48,6 @@ contract AutoRaffle {
         );
         
         owner = msg.sender;
-        prizeDescription = _prizeDescription;
         ticketPrice = _ticketPrice;
         prizeValue = _prizeValue;
         endTime = block.timestamp + _duration;

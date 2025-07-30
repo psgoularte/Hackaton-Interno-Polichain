@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\Users\\sgoul\\Documents\\Projetos Hackatons\\polichain_interno\\contracts\\RaffleManager.sol": {
-      "lastModificationDate": 1753833818552,
-      "contentHash": "53ea3c966e38b8516e70d69077077347",
+      "lastModificationDate": 1753838805394,
+      "contentHash": "7edb269e6d0fdd8cd45334fb8ea6e5e6",
       "sourceName": "contracts/RaffleManager.sol",
       "solcConfig": {
         "version": "0.8.19",
