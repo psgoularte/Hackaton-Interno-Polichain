@@ -1,31 +1,37 @@
-"use client"
-import { useState } from "react"
-import type React from "react"
+"use client";
+import { useState } from "react";
+import type React from "react";
 
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Search, ChevronDown, Plus } from "lucide-react"
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Search, ChevronDown, Plus } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { LogoSquare } from "@/components/logo-square"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LogoSquare } from "@/components/logo-square";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 export function Navbar() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const router = useRouter()
+  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (searchQuery.trim()) {
       // Navigate to search results page with query parameter
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
-  }
+  };
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
-  }
+    setSearchQuery(e.target.value);
+  };
 
   return (
     <nav className="w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
@@ -47,8 +53,11 @@ export function Navbar() {
           <div className="flex items-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center space-x-1 hover:bg-accent">
-                  <span>Options</span>
+                <Button
+                  variant="ghost"
+                  className="flex items-center space-x-1 hover:bg-accent"
+                >
+                  <span>Categories</span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -93,7 +102,7 @@ export function Navbar() {
           </div>
 
           {/* Centered Search Bar with Form */}
-          <div className="flex-1 flex justify-center">
+          <div className="flex-1 flex justify-center ">
             <div className="w-full max-w-md">
               <form onSubmit={handleSearch} className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -106,6 +115,15 @@ export function Navbar() {
                 />
               </form>
             </div>
+          </div>
+
+          {/*Rinbowkit Button*/}
+          <div className="flex-1 flex justify-center">
+            <ConnectButton
+              showBalance={false}
+              accountStatus="address"
+              chainStatus="icon"
+            />
           </div>
 
           {/* Create Raffle Button */}
@@ -121,5 +139,5 @@ export function Navbar() {
         </div>
       </div>
     </nav>
-  )
+  );
 }

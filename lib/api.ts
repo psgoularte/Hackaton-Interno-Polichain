@@ -1,271 +1,351 @@
-type Raffle = {
-  id: string
-  title: string
-  image: string
-  prizeAmount: number
-  currentAmount: number
-  targetAmount: number
-  minimumValue: number
-  ticketPrice: number
-  participants: number
-  category: string
-  description: string
-  endDate: string
-  organizer: string
+// src/lib/api.ts
+import { PrismaClient } from "@prisma/client";
+import {
+  getTransactionReceipt,
+  callContract,
+  timestampToDate,
+  weiToEth,
+  ContractABI,
+  TransactionResponse,
+} from "@/app/services/blockchain";
+import { AutoRaffleFactoryABI } from "@/app/lib/contracts";
+
+const prisma = new PrismaClient();
+
+interface Raffle {
+  id: string;
+  title: string;
+  image: string;
+  prizeAmount: number;
+  currentAmount: number;
+  targetAmount: number;
+  minimumValue: number;
+  ticketPrice: number;
+  participants: number;
+  category: string;
+  description: string;
+  endDate: string;
+  organizer: string;
+  address: string;
 }
 
-// Simulated backend data - in real app this would come from your API
-const backendData: Record<string, Raffle[]> = {
-  studies: [
-    {
-      id: "study-1",
-      title: "Scholarship Fund for Underprivileged Students",
-      image: "/placeholder.svg?height=200&width=300",
-      prizeAmount: 5,
-      currentAmount: 3.7,
-      targetAmount: 5,
-      minimumValue: 4,
-      ticketPrice: 0.1,
-      participants: 3700,
-      category: "Studies",
-      description: "Supporting education for those who need it most",
-      endDate: "2024-04-20",
-      organizer: "Education Foundation",
-    },
-    {
-      id: "study-2",
-      title: "Educational Technology for Schools",
-      image: "/placeholder.svg?height=200&width=300",
-      prizeAmount: 6,
-      currentAmount: 5.7,
-      targetAmount: 6,
-      minimumValue: 5,
-      ticketPrice: 0.2,
-      participants: 2850,
-      category: "Studies",
-      description: "Bringing modern technology to classrooms",
-      endDate: "2024-04-15",
-      organizer: "Tech Education Initiative",
-    },
-    {
-      id: "study-3",
-      title: "Research Grant for Climate Studies",
-      image: "/placeholder.svg?height=200&width=300",
-      prizeAmount: 15,
-      currentAmount: 9,
-      targetAmount: 15,
-      minimumValue: 10,
-      ticketPrice: 0.3,
-      participants: 3000,
-      category: "Studies",
-      description: "Advancing climate change research",
-      endDate: "2024-05-01",
-      organizer: "Climate Research Institute",
-    },
-  ],
-  health: [
-    {
-      id: "health-1",
-      title: "Medical Research Fund for Cancer Treatment",
-      image: "/placeholder.svg?height=200&width=300",
-      prizeAmount: 10,
-      currentAmount: 7,
-      targetAmount: 10,
-      minimumValue: 6,
-      ticketPrice: 0.2,
-      participants: 1750,
-      category: "Health",
-      description: "Funding breakthrough cancer research",
-      endDate: "2024-03-15",
-      organizer: "Medical Research Foundation",
-    },
-    {
-      id: "health-2",
-      title: "Mental Health Support Program",
-      image: "/placeholder.svg?height=200&width=300",
-      prizeAmount: 8,
-      currentAmount: 6.4,
-      targetAmount: 8,
-      minimumValue: 5,
-      ticketPrice: 0.16,
-      participants: 4000,
-      category: "Health",
-      description: "Supporting mental health initiatives",
-      endDate: "2024-04-10",
-      organizer: "Mental Health Alliance",
-    },
-  ],
-  animals: [
-    {
-      id: "animal-1",
-      title: "Wildlife Conservation Project",
-      image: "/placeholder.svg?height=200&width=300",
-      prizeAmount: 15,
-      currentAmount: 8.4,
-      targetAmount: 15,
-      minimumValue: 8,
-      ticketPrice: 0.24,
-      participants: 3500,
-      category: "Animals",
-      description: "Protecting endangered species",
-      endDate: "2024-04-25",
-      organizer: "Wildlife Protection Society",
-    },
-    {
-      id: "animal-2",
-      title: "Animal Shelter Support Fund",
-      image: "/placeholder.svg?height=200&width=300",
-      prizeAmount: 7,
-      currentAmount: 5.6,
-      targetAmount: 7,
-      minimumValue: 4,
-      ticketPrice: 0.14,
-      participants: 4000,
-      category: "Animals",
-      description: "Supporting local animal shelters",
-      endDate: "2024-03-30",
-      organizer: "Animal Welfare Organization",
-    },
-  ],
-  ngos: [
-    {
-      id: "ngo-1",
-      title: "Clean Water Initiative for Rural Communities",
-      image: "/placeholder.svg?height=200&width=300",
-      prizeAmount: 20,
-      currentAmount: 13.4,
-      targetAmount: 20,
-      minimumValue: 12,
-      ticketPrice: 0.5,
-      participants: 2680,
-      category: "NGO's",
-      description: "Bringing clean water to underserved communities",
-      endDate: "2024-05-15",
-      organizer: "Water for All Foundation",
-    },
-    {
-      id: "ngo-2",
-      title: "Emergency Disaster Relief Fund",
-      image: "/placeholder.svg?height=200&width=300",
-      prizeAmount: 40,
-      currentAmount: 37,
-      targetAmount: 40,
-      minimumValue: 30,
-      ticketPrice: 1,
-      participants: 3700,
-      category: "NGO's",
-      description: "Rapid response for natural disasters",
-      endDate: "2024-03-20",
-      organizer: "Global Relief Network",
-    },
-  ],
-  others: [
-    {
-      id: "other-1",
-      title: "Community Garden Project",
-      image: "/placeholder.svg?height=200&width=300",
-      prizeAmount: 12,
-      currentAmount: 8.5,
-      targetAmount: 12,
-      minimumValue: 9,
-      ticketPrice: 0.25,
-      participants: 3400,
-      category: "Others",
-      description: "Creating green spaces for local communities",
-      endDate: "2024-04-18",
-      organizer: "Green Community Initiative",
-    },
-    {
-      id: "other-2",
-      title: "Local Arts Festival Support",
-      image: "/placeholder.svg?height=200&width=300",
-      prizeAmount: 8,
-      currentAmount: 6.2,
-      targetAmount: 8,
-      minimumValue: 5.5,
-      ticketPrice: 0.15,
-      participants: 4133,
-      category: "Others",
-      description: "Supporting local artists and cultural events",
-      endDate: "2024-04-12",
-      organizer: "Arts Community Collective",
-    },
-  ],
+interface RaffleCreationData {
+  title: string;
+  image?: string;
+  walletAddress: string;
+  prizeAmount: number;
+  targetAmount: number;
+  ticketPrice: number;
+  category: string;
+  description: string;
+  endDate: string;
 }
 
-export async function getRafflesByCategory(category: string): Promise<Raffle[]> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 100))
+async function fetchRaffleDataFromContract(
+  contractAddress: string
+): Promise<Partial<Raffle>> {
+  try {
+    const [ticketPrice, prizeValue, totalTicketsSold, endTime] =
+      await Promise.all([
+        callContract<string>({
+          address: contractAddress,
+          abi: AutoRaffleFactoryABI as unknown as any[],
+          functionName: "ticketPrice",
+        }),
+        callContract<string>({
+          address: contractAddress,
+          abi: AutoRaffleFactoryABI as unknown as any[],
+          functionName: "prizeValue",
+        }),
+        callContract<string>({
+          address: contractAddress,
+          abi: AutoRaffleFactoryABI as unknown as any[],
+          functionName: "totalTicketsSold",
+        }),
+        callContract<string>({
+          address: contractAddress,
+          abi: AutoRaffleFactoryABI as unknown as any[],
+          functionName: "endTime",
+        }),
+      ]);
 
-  const categoryKey = category.toLowerCase().replace("'s", "s")
-  const draws = backendData[categoryKey] || []
+    const ticketPriceEth = weiToEth(ticketPrice);
+    const prizeValueEth = weiToEth(prizeValue);
+    const participants = Number(totalTicketsSold);
+    const totalValue = ticketPriceEth * participants;
 
-  // Sort by popularity (participants count) in descending order
-  return draws.sort((a, b) => b.participants - a.participants)
+    return {
+      ticketPrice: ticketPriceEth,
+      prizeAmount: prizeValueEth,
+      participants,
+      endDate: timestampToDate(endTime),
+      currentAmount: totalValue,
+      targetAmount: prizeValueEth * 1.1,
+      minimumValue: prizeValueEth,
+    };
+  } catch (error) {
+    console.error("Error fetching contract data:", error);
+    return {};
+  }
 }
 
-export async function getMostPopularRaffles(): Promise<Raffle[]> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 100))
+export async function createRaffle(
+  raffleData: RaffleCreationData
+): Promise<Raffle> {
+  try {
+    // 1. Chamar a função createRaffle no contrato factory existente
+    const tx = await callContract<TransactionResponse>({
+      address: AutoRaffleFactoryABI as unknown as string,
+      abi: AutoRaffleFactoryABI as unknown as ContractABI,
+      functionName: "createRaffle",
+      args: [
+        weiToEth(raffleData.ticketPrice.toString()),
+        weiToEth(raffleData.prizeAmount.toString()),
+        Math.floor(
+          (new Date(raffleData.endDate).getTime() - Date.now()) / 1000
+        ),
+        Math.floor(raffleData.targetAmount / raffleData.ticketPrice),
+      ],
+    });
 
-  // Get all raffles from all categories
-  const allDraws = Object.values(backendData).flat()
+    // 2. Obter o endereço do novo contrato de rifa
+    if (!tx.wait) {
+      throw new Error("Transaction response missing wait method");
+    }
 
-  // Sort by popularity and return top 6
-  return allDraws.sort((a, b) => b.participants - a.participants).slice(0, 6)
+    const receipt = await getTransactionReceipt(tx.hash);
+    const raffleAddress = receipt.logs[0].address;
+
+    if (!raffleAddress) {
+      throw new Error("Failed to get raffle contract address from transaction");
+    }
+
+    // 3. Depois criamos o registro no banco de dados
+    const formData = new FormData();
+    formData.append("title", raffleData.title);
+    formData.append("content", raffleData.description);
+    formData.append("category", raffleData.category);
+    formData.append("wallet", raffleData.walletAddress);
+    formData.append("address", raffleAddress);
+    if (raffleData.image) {
+      formData.append("file", raffleData.image);
+    }
+    formData.append("ticketPrize", raffleData.ticketPrice.toString());
+    formData.append("prizeValue", raffleData.prizeAmount.toString());
+    formData.append(
+      "duration",
+      Math.floor(
+        (new Date(raffleData.endDate).getTime() - Date.now()) / 1000
+      ).toString()
+    );
+    formData.append(
+      "maxTickets",
+      Math.floor(raffleData.targetAmount / raffleData.ticketPrice).toString()
+    );
+
+    const response = await fetch("/api/raffles", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to create raffle");
+    }
+
+    const dbRaffle = await response.json();
+
+    return {
+      id: dbRaffle.id.toString(),
+      title: dbRaffle.title,
+      image: dbRaffle.coverImageUrl || "/placeholder.svg",
+      category: dbRaffle.category || "general",
+      description: dbRaffle.content || "",
+      organizer: dbRaffle.wallet,
+      address: dbRaffle.address,
+      minimumValue: raffleData.prizeAmount,
+      ticketPrice: raffleData.ticketPrice,
+      prizeAmount: raffleData.prizeAmount,
+      targetAmount: raffleData.targetAmount,
+      endDate: raffleData.endDate,
+      currentAmount: 0, // Inicialmente zero
+      participants: 0, // Inicialmente zero
+    };
+  } catch (error) {
+    console.error("Error creating raffle:", error);
+    throw error;
+  }
 }
 
-export async function getAboutToEndRaffles(): Promise<Raffle[]> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 100))
+// Função para buscar uma rifa específica por ID
+export async function getRaffleById(id: string): Promise<Raffle> {
+  try {
+    // Primeiro busca no banco de dados
+    const dbRaffle = await prisma.raffle.findUnique({
+      where: { id: parseInt(id) },
+    });
 
-  // Get all raffles and sort by end date (closest first)
-  const allDraws = Object.values(backendData).flat()
+    if (!dbRaffle) {
+      throw new Error("Raffle not found");
+    }
 
-  return allDraws
-    .sort((a, b) => {
-      const dateA = a.endDate ? new Date(a.endDate).getTime() : Date.now()
-      const dateB = b.endDate ? new Date(b.endDate).getTime() : Date.now()
-      return dateA - dateB
+    // Depois busca dados do contrato
+    const contractData = await fetchRaffleDataFromContract(dbRaffle.address);
+
+    return {
+      id: dbRaffle.id.toString(),
+      title: dbRaffle.title,
+      image: dbRaffle.coverImageUrl || "/placeholder.svg",
+      prizeAmount: contractData.prizeAmount || 0,
+      currentAmount: contractData.currentAmount || 0,
+      targetAmount: contractData.targetAmount || 0,
+      minimumValue: contractData.minimumValue || 0,
+      ticketPrice: contractData.ticketPrice || 0,
+      participants: contractData.participants || 0,
+      category: dbRaffle.category || "general",
+      description: dbRaffle.content || "",
+      endDate:
+        contractData.endDate ||
+        new Date(Date.now() + dbRaffle.duration * 1000).toISOString(),
+      organizer: dbRaffle.wallet,
+      address: dbRaffle.address,
+    };
+  } catch (error) {
+    console.error(`Error fetching raffle ${id}:`, error);
+    throw error;
+  }
+}
+
+async function getRafflesWithContractData() {
+  const dbRaffles = await prisma.raffle.findMany();
+
+  return Promise.all(
+    dbRaffles.map(async (dbRaffle) => {
+      const contractData = await fetchRaffleDataFromContract(dbRaffle.address);
+
+      return {
+        id: dbRaffle.id.toString(),
+        title: dbRaffle.title,
+        image: dbRaffle.coverImageUrl || "/placeholder.svg",
+        category: dbRaffle.category || "general",
+        description: dbRaffle.content || "",
+        organizer: dbRaffle.wallet,
+        address: dbRaffle.address,
+        ...contractData,
+      } as Raffle;
     })
-    .slice(0, 6)
+  );
 }
 
 export async function getFeaturedRaffles(): Promise<Raffle[]> {
-  // For homepage, return a mix of popular draws from different categories
-  return getMostPopularRaffles()
+  const allRaffles = await getRafflesWithContractData();
+  return allRaffles.sort((a, b) => b.participants - a.participants).slice(0, 6);
 }
 
-// Enhanced search function with better filtering
-export async function searchRaffles(query: string): Promise<Raffle[]> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 300))
+export async function getMostPopularRaffles(): Promise<Raffle[]> {
+  const allRaffles = await getRafflesWithContractData();
+  return allRaffles
+    .sort((a, b) => b.participants - a.participants)
+    .slice(0, 12);
+}
 
-  // Get all raffles from all categories
-  const allDraws = Object.values(backendData).flat()
+export async function getAboutToEndRaffles(): Promise<Raffle[]> {
+  const allRaffles = await getRafflesWithContractData();
+  return allRaffles
+    .sort((a, b) => {
+      const dateA = new Date(a.endDate).getTime();
+      const dateB = new Date(b.endDate).getTime();
+      return dateA - dateB;
+    })
+    .slice(0, 12);
+}
 
-  // Convert query to lowercase for case-insensitive search
-  const searchTerm = query.toLowerCase().trim()
-
-  // Filter raffles based on search criteria
-  const filteredRaffles = allDraws.filter((raffle) => {
-    return (
-      raffle.title.toLowerCase().includes(searchTerm) ||
-      raffle.description.toLowerCase().includes(searchTerm) ||
-      raffle.category.toLowerCase().includes(searchTerm) ||
-      raffle.organizer.toLowerCase().includes(searchTerm)
+export async function getRafflesByCategory(
+  category: string
+): Promise<Raffle[]> {
+  const allRaffles = await getRafflesWithContractData();
+  return allRaffles
+    .filter(
+      (raffle) => raffle.category.toLowerCase() === category.toLowerCase()
     )
-  })
+    .sort((a, b) => b.participants - a.participants);
+}
 
-  // Sort by relevance (title matches first, then by popularity)
-  return filteredRaffles.sort((a, b) => {
-    const aTitle = a.title.toLowerCase().includes(searchTerm)
-    const bTitle = b.title.toLowerCase().includes(searchTerm)
+export async function searchRaffles(query: string): Promise<Raffle[]> {
+  const allRaffles = await getRafflesWithContractData();
+  const searchTerm = query.toLowerCase().trim();
 
-    if (aTitle && !bTitle) return -1
-    if (!aTitle && bTitle) return 1
+  return allRaffles
+    .filter((raffle) => {
+      return (
+        raffle.title.toLowerCase().includes(searchTerm) ||
+        raffle.description.toLowerCase().includes(searchTerm) ||
+        raffle.category.toLowerCase().includes(searchTerm) ||
+        raffle.organizer.toLowerCase().includes(searchTerm) ||
+        raffle.address.toLowerCase().includes(searchTerm)
+      );
+    })
+    .sort((a, b) => {
+      const aTitle = a.title.toLowerCase().includes(searchTerm);
+      const bTitle = b.title.toLowerCase().includes(searchTerm);
 
-    // If both or neither match title, sort by popularity
-    return b.participants - a.participants
-  })
+      if (aTitle && !bTitle) return -1;
+      if (!aTitle && bTitle) return 1;
+      return b.participants - a.participants;
+    });
+}
+
+export async function updateRaffle(
+  id: string,
+  data: Partial<Raffle>
+): Promise<Raffle> {
+  try {
+    const formData = new FormData();
+    if (data.title) formData.append("title", data.title);
+    if (data.description) formData.append("content", data.description);
+    if (data.category) formData.append("category", data.category);
+    if (data.organizer) formData.append("wallet", data.organizer);
+    if (data.address) formData.append("address", data.address);
+    if (data.ticketPrice)
+      formData.append("ticketPrize", data.ticketPrice.toString());
+    if (data.prizeAmount)
+      formData.append("prizeValue", data.prizeAmount.toString());
+    if (data.endDate) {
+      const duration = Math.floor(
+        (new Date(data.endDate).getTime() - Date.now()) / 1000
+      );
+      formData.append("duration", duration.toString());
+    }
+
+    const response = await fetch(`/api/raffles?id=${id}`, {
+      method: "PUT",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to update raffle");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`Error updating raffle ${id}:`, error);
+    throw error;
+  }
+}
+
+export async function deleteRaffle(id: string): Promise<void> {
+  try {
+    const response = await fetch(`/api/raffles?id=${id}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to delete raffle");
+    }
+  } catch (error) {
+    console.error(`Error deleting raffle ${id}:`, error);
+    throw error;
+  }
 }

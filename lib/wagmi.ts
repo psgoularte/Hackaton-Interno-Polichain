@@ -1,4 +1,4 @@
-import { hardhat, mainnet, sepolia } from "wagmi/chains";
+import { hardhat, sepolia } from "wagmi/chains";
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
 
 const hardhatChain = {

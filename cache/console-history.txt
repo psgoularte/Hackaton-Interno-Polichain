@@ -1,0 +1,28 @@
+console.log("Total de rifas criadas:", count.tStrig());
+const count = await factory.getffsot);
+const factory = await ethers.gContrctt(factoryAbi, factoryAddress);
+];
+  "function allRaffles(uint256) view returns (address)"
+  "function getRafflesCount() view returns (uint256)",
+const factoryAbi = [
+];
+  "function allRaffles(uint256) view returns (address)"
+  "function getRafflesCount() view returns (uint256)",
+const factoryAbi = [
+const factoryAddress = "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707";
+];const factory = await ethers.tCotatt(factoryAbi, factoryAddress);
+  "function allRaffles(uint256) view returns (address)"
+  "function getRafflesCount() view returns (uint256)",
+const factoryAddress = "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707";const factoryAbi = [
+console.("Total de rifas criadas:", count.totin());
+const count = await factory.gRflsot);
+const factory = await ethers.geontractAt(factoryAbi, factoryAddress);
+/ Conectar ao contrato
+];
+  "function allRaffles(uint256) view returns (address)"
+  "function getRafflesCount() view returns (uint256)",
+const factoryAbi = [
+/ ABI mínima para getRafflesCount e allRaffles
+/
+cactoryAddress = "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707";
+// Endereço do factory

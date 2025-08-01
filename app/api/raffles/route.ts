@@ -18,18 +18,9 @@ function handleError(error: unknown, context: string) {
   );
 }
 
-// Validação de carteira cripto (suporta Ethereum, Solana, Bitcoin)
-function validateCryptoWallet(wallet: string): boolean {
-  // Ethereum (0x...) - 42 caracteres
-  if (/^0x[a-fA-F0-9]{40}$/.test(wallet)) return true;
-
-  // Solana (base58) - 32-44 caracteres
-  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(wallet)) return true;
-
-  // Bitcoin (1, 3, bc1) - 25-62 caracteres
-  if (/^(1|3|bc1)[a-zA-HJ-NP-Z0-9]{25,62}$/.test(wallet)) return true;
-
-  return false;
+// Validação de carteira Ethereum (0x + 40 caracteres hexadecimais)
+function validateEthAddress(address: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
 
 // GET - List all raffles
@@ -54,7 +45,14 @@ export async function POST(request: Request) {
     const content = formData.get("content")?.toString()?.trim();
     const category = formData.get("category")?.toString()?.trim();
     const wallet = formData.get("wallet")?.toString()?.trim();
+    const address = formData.get("address")?.toString()?.trim(); // Novo campo
     const file = formData.get("file") as File | null;
+    const ticketPrize = parseInt(
+      formData.get("ticketPrize")?.toString() || "0"
+    );
+    const prizeValue = parseInt(formData.get("prizeValue")?.toString() || "0");
+    const duration = parseInt(formData.get("duration")?.toString() || "0");
+    const maxTickets = parseInt(formData.get("maxTickets")?.toString() || "0");
 
     // Validation
     if (!title || title.length < 3) {
@@ -64,12 +62,16 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!wallet || !validateCryptoWallet(wallet)) {
+    if (!wallet || !validateEthAddress(wallet)) {
       return NextResponse.json(
-        {
-          error:
-            "Valid crypto wallet address is required (supports Ethereum, Solana, Bitcoin formats)",
-        },
+        { error: "Valid Ethereum wallet address is required (0x...)" },
+        { status: 400 }
+      );
+    }
+
+    if (!address || !validateEthAddress(address)) {
+      return NextResponse.json(
+        { error: "Valid Ethereum contract address is required (0x...)" },
         { status: 400 }
       );
     }
@@ -95,6 +97,35 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate new fields
+    if (ticketPrize <= 0) {
+      return NextResponse.json(
+        { error: "Ticket prize must be greater than 0" },
+        { status: 400 }
+      );
+    }
+
+    if (prizeValue <= 0) {
+      return NextResponse.json(
+        { error: "Prize value must be greater than 0" },
+        { status: 400 }
+      );
+    }
+
+    if (duration <= 0) {
+      return NextResponse.json(
+        { error: "Duration must be greater than 0" },
+        { status: 400 }
+      );
+    }
+
+    if (maxTickets <= 0) {
+      return NextResponse.json(
+        { error: "Max tickets must be greater than 0" },
+        { status: 400 }
+      );
+    }
+
     // 1. Upload to Vercel Blob
     const { url, pathname } = await put(file.name, file, { access: "public" });
     blobId = pathname;
@@ -105,9 +136,14 @@ export async function POST(request: Request) {
         title,
         content: content || null,
         category: category || "general",
-        wallet, // Novo campo
+        wallet,
+        address, // Novo campo
         coverImageUrl: url,
         coverImageId: pathname,
+        ticketPrize,
+        prizeValue,
+        duration,
+        maxTickets,
       },
     });
 
@@ -137,7 +173,12 @@ export async function PUT(request: Request) {
     const content = formData.get("content")?.toString()?.trim();
     const category = formData.get("category")?.toString()?.trim();
     const wallet = formData.get("wallet")?.toString()?.trim();
+    const address = formData.get("address")?.toString()?.trim(); // Novo campo
     const file = formData.get("file") as File | null;
+    const ticketPrize = formData.get("ticketPrize")?.toString();
+    const prizeValue = formData.get("prizeValue")?.toString();
+    const duration = formData.get("duration")?.toString();
+    const maxTickets = formData.get("maxTickets")?.toString();
 
     // Validate required fields
     if (!id) {
@@ -150,39 +191,17 @@ export async function PUT(request: Request) {
     }
 
     // Validate wallet format if provided
-    if (wallet && !validateCryptoWallet(wallet)) {
+    if (wallet && !validateEthAddress(wallet)) {
       return NextResponse.json(
-        { error: "Invalid crypto wallet address format" },
+        { error: "Invalid Ethereum wallet address format (0x...)" },
         { status: 400 }
       );
     }
 
-    // Validate at least one field is being updated
-    if (!title && !content && !category && !wallet && !file) {
+    // Validate contract address format if provided
+    if (address && !validateEthAddress(address)) {
       return NextResponse.json(
-        { error: "At least one field must be provided for update" },
-        { status: 400 }
-      );
-    }
-
-    // Validate field lengths
-    if (title && title.length < 3) {
-      return NextResponse.json(
-        { error: "Title must be at least 3 characters" },
-        { status: 400 }
-      );
-    }
-
-    if (category && category.length > 16) {
-      return NextResponse.json(
-        { error: "Category must be 16 characters or less" },
-        { status: 400 }
-      );
-    }
-
-    if (content && content.length > 10000) {
-      return NextResponse.json(
-        { error: "Content too long (max 10000 characters)" },
+        { error: "Invalid Ethereum contract address format (0x...)" },
         { status: 400 }
       );
     }
@@ -198,28 +217,19 @@ export async function PUT(request: Request) {
 
     oldBlobId = existing.coverImageId;
 
-    // Handle image update
-    let imageUrl = existing.coverImageUrl;
-    let imageId = existing.coverImageId;
-
-    if (file) {
-      // Upload new image
-      const { url, pathname } = await put(file.name, file, {
-        access: "public",
-      });
-      newBlobId = pathname;
-      imageUrl = url;
-      imageId = pathname;
-    }
-
     // Prepare update data
     const updateData: {
       title?: string;
       content?: string | null;
       category?: string;
       wallet?: string;
+      address?: string;
       coverImageUrl?: string;
       coverImageId?: string;
+      ticketPrize?: number;
+      prizeValue?: number;
+      duration?: number;
+      maxTickets?: number;
     } = {};
 
     // Only include fields that were provided
@@ -227,9 +237,21 @@ export async function PUT(request: Request) {
     if (content !== undefined) updateData.content = content || null;
     if (category !== undefined) updateData.category = category;
     if (wallet !== undefined) updateData.wallet = wallet;
+    if (address !== undefined) updateData.address = address;
+    if (ticketPrize !== undefined)
+      updateData.ticketPrize = parseInt(ticketPrize);
+    if (prizeValue !== undefined) updateData.prizeValue = parseInt(prizeValue);
+    if (duration !== undefined) updateData.duration = parseInt(duration);
+    if (maxTickets !== undefined) updateData.maxTickets = parseInt(maxTickets);
+
+    // Handle image update if file is provided
     if (file) {
-      updateData.coverImageUrl = imageUrl;
-      updateData.coverImageId = imageId;
+      const { url, pathname } = await put(file.name, file, {
+        access: "public",
+      });
+      newBlobId = pathname;
+      updateData.coverImageUrl = url;
+      updateData.coverImageId = pathname;
     }
 
     // Update in database
