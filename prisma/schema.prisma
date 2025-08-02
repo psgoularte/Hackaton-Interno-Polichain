@@ -17,10 +17,11 @@ model Raffle {
   createdAt     DateTime @default(now()) @db.Timestamptz(6)
   coverImageUrl String   @db.VarChar(512)
   coverImageId  String   @db.VarChar(512)
-  ticketPrize   Int      // Preço de cada ticket (em wei)
-  prizeValue    Int      // Valor total do prêmio (em wei)
+  ticketPrize   BigInt      // Preço de cada ticket (em wei)
+  prizeValue    BigInt      // Valor total do prêmio (em wei)
   duration      Int      // Duração do sorteio (em segundos)
   maxTickets    Int      // Número máximo de tickets que podem ser vendidos
+  targetAmount  Float
 
   @@map("Raffle")
 }

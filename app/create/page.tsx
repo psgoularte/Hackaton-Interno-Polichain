@@ -72,8 +72,28 @@ export const hardhat = defineChain({
   },
 });
 
+export const sepolia = defineChain({
+  id: 11155111,
+  name: "Sepolia",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: {
+    default: {
+      http: [
+        process.env.NEXT_PUBLIC_RPC_URL ||
+          "https://sepolia.infura.io/v3/sua_api_key",
+      ],
+    },
+    public: {
+      http: [
+        process.env.NEXT_PUBLIC_RPC_URL ||
+          "https://sepolia.infura.io/v3/sua_api_key",
+      ],
+    },
+  },
+});
+
 export default function CreateRafflePage() {
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const { data: receipt, isPending } = useWaitForTransactionReceipt();
 
@@ -179,7 +199,7 @@ export default function CreateRafflePage() {
       const remainder =
         ((totalRaffleAmount * 1000) % (ticketPrice * 1000)) / 1000;
 
-      if (Math.abs(remainder) > 0.001) {
+      if (Math.abs(remainder) > 0.0001) {
         setShowDivisibilityDialog(true);
         return false;
       }
@@ -204,13 +224,13 @@ export default function CreateRafflePage() {
     try {
       // 1. Configuração do cliente
       const publicClient = createPublicClient({
-        chain: hardhat,
+        chain: sepolia,
         transport: http(process.env.NEXT_PUBLIC_RPC_URL),
       });
 
       // 2. Preparação dos parâmetros
       const prize = parseEther(Number(formData.prizeAmount).toFixed(18));
-      const price = parseEther(Number(formData.ticketPrice).toFixed(18));
+      const price = parseEther(formData.ticketPrice.toString());
       console.log("Valores enviados:", {
         prize: formatEther(prize), // Verifique no console
         price: formatEther(price),
@@ -224,9 +244,13 @@ export default function CreateRafflePage() {
         abi: AutoRaffleFactoryABI,
         functionName: "createRaffle",
         args: [price, prize, duration, minTickets],
-        gas: BigInt(1000000), // Aumente o limite de gas
-        gasPrice: parseGwei("30"), // Aumente o gasPrice
       })) as Hex;
+
+      console.log("Price:", price, typeof price);
+      console.log("Prize:", prize, typeof prize);
+      console.log("Duration:", duration, typeof duration);
+      console.log("MinTickets:", minTickets, typeof minTickets);
+      console.log("Factory Address:", AUTORAFFLEFACTORY_ADDRESS);
 
       // 4. Feedback ao usuário
       setShowConfirmationDialog(false);
@@ -324,6 +348,13 @@ export default function CreateRafflePage() {
     const eventSignature = keccak256(
       toHex("RaffleCreated(address,address,uint256,uint256,uint256,uint256)")
     );
+    const eventLog = receipt.logs.find(
+      (log) => log.topics[0] === eventSignature
+    );
+    console.log("Expected event topic:", eventSignature);
+    receipt.logs.forEach((log, i) => {
+      console.log(`Log[${i}] topic0:`, log.topics[0]);
+    });
 
     // 3. Procura pelo evento nos logs
     const creationEvent = receipt.logs.find(
@@ -448,7 +479,7 @@ export default function CreateRafflePage() {
 
   async function debugTransaction(txHash: Hex) {
     const publicClient = createPublicClient({
-      chain: hardhat,
+      chain: sepolia,
       transport: http(),
     });
 
@@ -458,7 +489,7 @@ export default function CreateRafflePage() {
 
     console.log("=== DIAGNÓSTICO DA TRANSAÇÃO ===");
     console.log("Para:", tx.to);
-    console.log("From:", tx.from);
+
     console.log("Valor:", tx.value);
     console.log("Dados:", tx.input);
     console.log("Status:", receipt.status);
@@ -643,8 +674,8 @@ export default function CreateRafflePage() {
                     <Input
                       id="prizeAmount"
                       type="number"
-                      step="0.001"
-                      min="0.001"
+                      step="0.0001"
+                      min="0.0001"
                       value={formData.prizeAmount}
                       onChange={(e) =>
                         setFormData({
@@ -672,8 +703,8 @@ export default function CreateRafflePage() {
                     <Input
                       id="ticketPrice"
                       type="number"
-                      step="0.001"
-                      min="0.001"
+                      step="0.0000001"
+                      min="0.000001"
                       value={formData.ticketPrice}
                       onChange={(e) =>
                         setFormData({

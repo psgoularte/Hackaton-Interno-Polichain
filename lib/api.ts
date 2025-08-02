@@ -1,4 +1,5 @@
 // src/lib/api.ts
+import { AutoRaffleABI } from "@/app/lib/contracts";
 import { PrismaClient } from "@prisma/client";
 import {
   getTransactionReceipt,
@@ -49,43 +50,36 @@ async function fetchRaffleDataFromContract(
       await Promise.all([
         callContract<string>({
           address: contractAddress,
-          abi: AutoRaffleFactoryABI as unknown as any[],
+          abi: AutoRaffleABI as unknown as any[], // importe o ABI correto, não o da factory
           functionName: "ticketPrice",
         }),
         callContract<string>({
           address: contractAddress,
-          abi: AutoRaffleFactoryABI as unknown as any[],
+          abi: AutoRaffleABI as unknown as any[],
           functionName: "prizeValue",
         }),
         callContract<string>({
           address: contractAddress,
-          abi: AutoRaffleFactoryABI as unknown as any[],
+          abi: AutoRaffleABI as unknown as any[],
           functionName: "totalTicketsSold",
         }),
         callContract<string>({
           address: contractAddress,
-          abi: AutoRaffleFactoryABI as unknown as any[],
+          abi: AutoRaffleABI as unknown as any[],
           functionName: "endTime",
         }),
       ]);
 
-    const ticketPriceEth = weiToEth(ticketPrice);
-    const prizeValueEth = weiToEth(prizeValue);
-    const participants = Number(totalTicketsSold);
-    const totalValue = ticketPriceEth * participants;
-
+    // Converte e retorna um objeto parcial do tipo Raffle
     return {
-      ticketPrice: ticketPriceEth,
-      prizeAmount: prizeValueEth,
-      participants,
+      ticketPrice: weiToEth(ticketPrice),
+      prizeAmount: weiToEth(prizeValue),
+      participants: Number(totalTicketsSold),
       endDate: timestampToDate(endTime),
-      currentAmount: totalValue,
-      targetAmount: prizeValueEth * 1.1,
-      minimumValue: prizeValueEth,
     };
   } catch (error) {
     console.error("Error fetching contract data:", error);
-    return {};
+    return {}; // Garanta o retorno mesmo em erro
   }
 }
 
@@ -130,7 +124,7 @@ export async function createRaffle(
     if (raffleData.image) {
       formData.append("file", raffleData.image);
     }
-    formData.append("ticketPrize", raffleData.ticketPrice.toString());
+    formData.append("ticketPrice", raffleData.ticketPrice.toString());
     formData.append("prizeValue", raffleData.prizeAmount.toString());
     formData.append(
       "duration",
@@ -307,7 +301,7 @@ export async function updateRaffle(
     if (data.organizer) formData.append("wallet", data.organizer);
     if (data.address) formData.append("address", data.address);
     if (data.ticketPrice)
-      formData.append("ticketPrize", data.ticketPrice.toString());
+      formData.append("ticketPrice", data.ticketPrice.toString());
     if (data.prizeAmount)
       formData.append("prizeValue", data.prizeAmount.toString());
     if (data.endDate) {

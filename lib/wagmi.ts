@@ -1,8 +1,10 @@
-import { hardhat, sepolia } from "wagmi/chains";
+"use client";
+
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { hardhat, sepolia } from "wagmi/chains";
 
 const hardhatChain = {
-  id: 31337, // Chain ID padrão do Hardhat
+  id: 31337,
   name: "Hardhat",
   network: "hardhat",
   nativeCurrency: {
@@ -11,17 +13,18 @@ const hardhatChain = {
     symbol: "ETH",
   },
   rpcUrls: {
-    default: { http: ["http://127.0.0.1:8545"] }, // RPC padrão do Hardhat
+    default: { http: ["http://127.0.0.1:8545"] },
   },
-  blockExplores: {
-    default: { name: "Hardhat", http: ["http://localhost:8545"] },
+  blockExplorers: {
+    default: { name: "Hardhat", url: "http://localhost:8545" },
   },
   testnet: true,
 } as const;
 
 export const config = getDefaultConfig({
   appName: "Meu App Web3",
-  projectId: "25aacf32f3a69cb2accbbde68772321a", //ID do seu projeto, lembrar de atualizar
-  chains: [sepolia, hardhat],
+  projectId: "25aacf32f3a69cb2accbbde68772321a",
+  chains: [sepolia, hardhatChain],
   ssr: true,
 });
+export { hardhat };

@@ -1,4 +1,11 @@
 import { CONFIG } from "@/config";
+import { createPublicClient, http } from "viem";
+import { hardhat } from "@/lib/wagmi"; // ajuste conforme seu projeto
+import { ethers } from "ethers";
+const publicClient = createPublicClient({
+  chain: hardhat,
+  transport: http(process.env.NEXT_PUBLIC_RPC_URL),
+});
 
 // src/services/blockchain.ts
 interface ContractCall {
@@ -49,41 +56,11 @@ type ABIMethod = {
   stateMutability: "view" | "pure" | "nonpayable" | "payable";
 };
 
-export async function getTransactionReceipt(txHash: string): Promise<any> {
-  const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL;
-  let receipt = null;
-  let attempts = 0;
-
-  // Polling para verificar se a transação foi minerada
-  while (!receipt && attempts < 30) {
-    const response = await fetch(CONFIG.RPC_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "eth_getTransactionReceipt",
-        params: [txHash],
-        id: 1,
-      }),
-    });
-
-    const result = await response.json();
-    if (result.result) {
-      receipt = result.result;
-      break;
-    }
-
-    attempts++;
-    await new Promise((resolve) => setTimeout(resolve, 2000)); // Espera 2 segundos
-  }
-
-  if (!receipt) {
-    throw new Error("Transaction receipt not found after 1 minute");
-  }
-
-  return receipt;
+export async function getTransactionReceipt(txHash: string) {
+  return await publicClient.waitForTransactionReceipt({
+    hash: txHash as `0x${string}`,
+  });
 }
-
 type TupleValue = Record<string, any> | any[];
 
 export interface TransactionResponse {
@@ -115,14 +92,14 @@ export function timestampToDate(timestamp: number | string | bigint): string {
 
 export interface ContractABI extends Array<ABIMethod | any> {}
 
-export async function callContract<T = TransactionResponse>({
+export async function callContract<T = any>({
   address,
   abi,
   functionName,
   args = [],
 }: {
   address: string;
-  abi: ContractABI;
+  abi: any[];
   functionName: string;
   args?: any[];
 }): Promise<T> {
@@ -130,38 +107,38 @@ export async function callContract<T = TransactionResponse>({
     process.env.NEXT_PUBLIC_RPC_URL ||
     "https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY";
 
-  const method = abi.find(
-    (item) => item.name === functionName && item.type === "function"
-  );
+  // Cria provider JSON-RPC com ethers v6
+  const provider = new ethers.JsonRpcProvider(RPC_URL);
 
-  if (!method) throw new Error(`Function ${functionName} not found in ABI`);
+  // Cria interface do contrato
+  const contractInterface = new ethers.Interface(abi);
 
-  const response = await fetch(RPC_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      method: "eth_call",
-      params: [
-        {
-          to: address,
-          data: encodeFunctionCall(method, args),
-        },
-        "latest",
-      ],
-      id: 1,
-    }),
-  });
-
-  const result = await response.json();
-
-  if (result.error) {
-    throw new Error(result.error.message);
+  // Verifica se a função existe no ABI
+  if (!contractInterface.getFunction(functionName)) {
+    throw new Error(`Function ${functionName} not found in ABI`);
   }
 
-  return decodeResult(method, result.result) as T;
-}
+  // Codifica os dados para a chamada (call)
+  const data = contractInterface.encodeFunctionData(functionName, args);
 
+  // Monta o objeto para eth_call
+  const callRequest = {
+    to: address,
+    data,
+  };
+
+  // Executa o eth_call
+  const result = await provider.call(callRequest);
+
+  // Decodifica o resultado
+  const decoded = contractInterface.decodeFunctionResult(functionName, result);
+
+  // Se só tem um valor de retorno, retorna ele direto
+  if (decoded.length === 1) return decoded[0] as T;
+
+  // Se vários, retorna array completo
+  return decoded as unknown as T;
+}
 // Função corrigida com tipagem completa
 async function encodeFunctionCall(
   method: ABIMethod,

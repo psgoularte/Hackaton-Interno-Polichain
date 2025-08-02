@@ -1,5 +1,5 @@
 // Arquivo gerado automaticamente - não edite manualmente
-// Data: 2025-07-31T00:06:34.519Z
+// Data: 2025-08-02T03:23:13.833Z
 
 export const AutoRaffleABI = [
   {
@@ -633,7 +633,7 @@ export const AutoRaffleFactoryABI = [
   },
 ] as const;
 export const AUTORAFFLEFACTORY_ADDRESS =
-  "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707" as const;
+  "0x8cb3971e1f69aF5e0536Cc1f0790D3DB7ccE1c5C" as const;
 
 // Objeto consolidado para fácil importação
 export const CONTRACTS = {
