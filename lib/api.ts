@@ -42,7 +42,7 @@ interface RaffleCreationData {
   endDate: string;
 }
 
-async function fetchRaffleDataFromContract(
+export async function fetchRaffleDataFromContract(
   contractAddress: string
 ): Promise<Partial<Raffle>> {
   try {
@@ -173,41 +173,15 @@ export async function createRaffle(
 
 // Função para buscar uma rifa específica por ID
 export async function getRaffleById(id: string): Promise<Raffle> {
-  try {
-    // Primeiro busca no banco de dados
-    const dbRaffle = await prisma.raffle.findUnique({
-      where: { id: parseInt(id) },
-    });
+  const res = await fetch(`/api/raffles/${id}`);
 
-    if (!dbRaffle) {
-      throw new Error("Raffle not found");
-    }
-
-    // Depois busca dados do contrato
-    const contractData = await fetchRaffleDataFromContract(dbRaffle.address);
-
-    return {
-      id: dbRaffle.id.toString(),
-      title: dbRaffle.title,
-      image: dbRaffle.coverImageUrl || "/placeholder.svg",
-      prizeAmount: contractData.prizeAmount || 0,
-      currentAmount: contractData.currentAmount || 0,
-      targetAmount: contractData.targetAmount || 0,
-      minimumValue: contractData.minimumValue || 0,
-      ticketPrice: contractData.ticketPrice || 0,
-      participants: contractData.participants || 0,
-      category: dbRaffle.category || "general",
-      description: dbRaffle.content || "",
-      endDate:
-        contractData.endDate ||
-        new Date(Date.now() + dbRaffle.duration * 1000).toISOString(),
-      organizer: dbRaffle.wallet,
-      address: dbRaffle.address,
-    };
-  } catch (error) {
-    console.error(`Error fetching raffle ${id}:`, error);
-    throw error;
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || "Erro ao buscar rifa");
   }
+
+  const raffle = await res.json();
+  return raffle;
 }
 
 async function getRafflesWithContractData() {

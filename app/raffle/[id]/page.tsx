@@ -1,11 +1,17 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import { Navbar } from "@/components/navbar";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ProgressBar } from "@/components/progress-bar";
+import { useParams } from "next/navigation";
+import { useAccount, useReadContract, useWriteContract } from "wagmi";
+import { parseEther } from "viem";
+import { getRaffleById } from "@/lib/api";
+import { CONTRACTS } from "@/app/lib/contracts";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { formatUnits } from "viem";
 import {
   ArrowLeft,
   Calendar,
@@ -18,149 +24,131 @@ import {
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
-import { useAccount, useWriteContract, useReadContract } from "wagmi";
-import { CONTRACTS } from "@/app/lib/contracts";
-import { parseEther } from "viem";
+import { ProgressBar } from "@/components/progress-bar";
 
-const { address, isConnected } = useAccount();
-const raffleABI = CONTRACTS.AutoRaffle.abi;
-
-// This would normally come from a database or API
-const getRaffleData = (id: string) => {
-  const sampleData = {
-    "1": {
-      title: "Medical Research Fund for Cancer Treatment",
-      image: "/placeholder.svg?height=400&width=600",
-      prizeAmount: 10,
-      currentAmount: 7,
-      targetAmount: 10,
-      minimumTickets: 55, // Calculated as (10 * 1.1) / 0.2 = 55
-      ticketPrice: 0.2,
-      participants: 1750,
-      category: "Health",
-      description:
-        "This raffle aims to fund groundbreaking cancer research that could lead to new treatment methods and potentially save thousands of lives. The research will focus on innovative immunotherapy approaches.",
-      endDate: "2024-03-15T23:59:59",
-      rules: [
-        "Minimum purchase: 1 ticket",
-        "Winner will be selected randomly using blockchain verification",
-        "Prize will be distributed within 48 hours of raffle completion",
-        "Only whole tickets can be purchased",
-        "If the Raffle is not viable by the Raffle's end, all the money will be refunded",
-      ],
-    },
-  };
-
-  return sampleData[id as keyof typeof sampleData] || sampleData["1"];
-};
-
-export default function RaffleDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const raffleData = getRaffleData(params.id);
-  const [ticketQuantity, setTicketQuantity] = useState(1);
-  const [buyerWallet, setBuyerWallet] = useState("");
-  const [error, setError] = useState("");
+export default function RaffleDetailPage() {
+  const { id } = useParams();
+  const { address, isConnected } = useAccount();
+  const [raffle, setRaffle] = useState<any>(null);
+  const [quantity, setQuantity] = useState(1);
   const [timeLeft, setTimeLeft] = useState("");
+  const [error, setError] = useState("");
+  const [raffleEnded, setRaffleEnded] = useState(false);
+  const [canRefund, setCanRefund] = useState(false);
+  const [winner, setWinner] = useState("");
 
-  const maxTickets = Math.floor(
-    (raffleData.targetAmount - raffleData.currentAmount) /
-      raffleData.ticketPrice
-  );
-  const totalCost = ticketQuantity * raffleData.ticketPrice;
+  const raffleABI = CONTRACTS.AutoRaffle.abi;
 
-  // Timer effect
+  const { writeContract: buyTicket, isPending: isBuying } = useWriteContract();
+  const { writeContract: refundTickets, isPending: isRefunding } =
+    useWriteContract();
+
+  const { data: contractWinner } = useReadContract({
+    address: raffle?.address as `0x${string}`,
+    abi: raffleABI,
+    functionName: "winner",
+  });
+
   useEffect(() => {
-    const calculateTimeLeft = () => {
-      const endDate = new Date(raffleData.endDate);
-      const now = new Date();
-      const difference = endDate.getTime() - now.getTime();
+    const load = async () => {
+      const raffleId = Array.isArray(id) ? id[0] : id;
+      if (!raffleId) return;
 
-      if (difference > 0) {
-        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-        const hours = Math.floor(
-          (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-        );
-        const minutes = Math.floor(
-          (difference % (1000 * 60 * 60)) / (1000 * 60)
-        );
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+      try {
+        const raffleData = await getRaffleById(raffleId);
+        setRaffle(raffleData);
 
-        if (days > 0) {
-          setTimeLeft(`${days}d ${hours}h ${minutes}m`);
-        } else if (hours > 0) {
-          setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
-        } else {
-          setTimeLeft(`${minutes}m ${seconds}s`);
-        }
-      } else {
-        setTimeLeft("Ended");
+        const end = new Date(raffleData.endDate);
+        const now = Date.now();
+        setRaffleEnded(now > end.getTime());
+
+        // Atualiza contagem regressiva
+        const updateTimer = () => {
+          const diff = end.getTime() - Date.now();
+          if (diff <= 0) {
+            setTimeLeft("Ended");
+            return;
+          }
+
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          setTimeLeft(`${hours}h ${minutes}m`);
+        };
+
+        updateTimer();
+        const interval = setInterval(updateTimer, 60000);
+        return () => clearInterval(interval);
+      } catch (err) {
+        console.error(err);
+        setError("Erro ao carregar rifa");
       }
     };
 
-    calculateTimeLeft();
-    const timer = setInterval(calculateTimeLeft, 1000);
+    load();
+  }, [id]);
 
-    return () => clearInterval(timer);
-  }, [raffleData.endDate]);
+  useEffect(() => {
+    if (!raffleEnded || !raffle) return;
 
-  const {
-    writeContract: deleteRaffle,
-    data: deleteData,
-    isPending: isDeleting,
-  } = useWriteContract();
+    const raised = Number(raffle.ticketPrice) * raffle.maxTickets;
+    const goal = raffle.targetAmount * 1.1;
+    setCanRefund(raised < goal);
 
-  const handleDelete = () => {
-    deleteRaffle({
-      address: params.id as `0x${string}`,
-      abi: raffleABI, // ABI do contrato AutoRaffle
-      functionName: "cancelRaffle", // supondo essa função
-    });
-  };
+    if (
+      contractWinner &&
+      contractWinner !== "0x0000000000000000000000000000000000000000"
+    ) {
+      setWinner(contractWinner);
+    }
+  }, [raffleEnded, raffle, contractWinner]);
 
-  const handleQuantityChange = (newQuantity: number) => {
-    setError("");
-    if (newQuantity < 1) {
-      setTicketQuantity(1);
-    } else if (newQuantity > maxTickets) {
-      setTicketQuantity(maxTickets);
-      setError(`Maximum ${maxTickets} tickets available`);
-    } else {
-      setTicketQuantity(newQuantity);
+  const handleBuy = () => {
+    if (!raffle || !address || !isConnected) return;
+
+    try {
+      const total = parseEther(
+        (Number(raffle.ticketPrice) * quantity).toString()
+      );
+
+      buyTicket({
+        address: raffle.address as `0x${string}`,
+        abi: raffleABI,
+        functionName: "buyTicket",
+        args: [BigInt(quantity)],
+        value: total,
+      });
+    } catch (e) {
+      console.error(e);
+      setError("Erro na compra");
     }
   };
 
-  const { writeContract: buyTicket, isPending } = useWriteContract();
+  const handleQuantityChange = (value: number) => {
+    if (value < 1) setQuantity(1);
+    else if (raffle && value > raffle.maxTickets)
+      setQuantity(raffle.maxTickets);
+    else setQuantity(value);
+  };
 
-  const handleBuyTicket = () => {
-    if (!isConnected || !address) return;
+  const handleRefund = () => {
+    if (!raffle || !address || !isConnected) return;
 
-    buyTicket({
-      address: params.id as `0x${string}`,
+    refundTickets({
+      address: raffle.address as `0x${string}`,
       abi: raffleABI,
-      functionName: "buyTicket",
-      args: [BigInt(ticketQuantity)], // ✅ aqui convertemos
-      value: parseEther(totalCost.toString()), // ✅ valor em ETH, também como BigInt
+      functionName: "claimRefund",
     });
   };
 
-  const { data: raffleOwner } = useReadContract({
-    address: params.id as `0x${string}`,
-    abi: raffleABI,
-    functionName: "owner",
-  });
+  if (!raffle) return <div className="p-4">Carregando...</div>;
 
-  const isOwner = address?.toLowerCase() === raffleOwner?.toLowerCase();
+  const totalCost = Number(raffle.ticketPrice) * quantity;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-primary/5">
       <Navbar />
-
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Back Button */}
           <div className="flex items-center mb-8">
             <Link href="/">
               <Button variant="ghost" size="sm" className="mr-4">
@@ -170,62 +158,45 @@ export default function RaffleDetailPage({
             </Link>
           </div>
 
-          {/* Main Content */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column - Main Info */}
+            {/* Left Column */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Hero Image */}
               <div className="aspect-video relative overflow-hidden rounded-lg">
                 <img
-                  src={raffleData.image || "/placeholder.svg"}
-                  alt={raffleData.title}
+                  src={raffle.image || "/placeholder.svg"}
+                  alt={raffle.title}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-4 right-4 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
-                  {raffleData.category}
+                  {raffle.category}
                 </div>
-                {/* Timer overlay */}
                 <div className="absolute bottom-4 left-4 bg-black/70 text-white px-3 py-2 rounded-full text-sm font-medium flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   {timeLeft}
                 </div>
               </div>
 
-              {/* Title and Description */}
               <div>
                 <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  {raffleData.title}
+                  {raffle.title}
                 </h1>
-                <p className="text-muted-foreground text-lg leading-relaxed">
-                  {raffleData.description}
-                </p>
               </div>
-
-              {/* Rules */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-primary">Raffle Rules</CardTitle>
+                  <CardTitle className="text-primary">Description</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ul className="space-y-2">
-                    {raffleData.rules.map((rule, index) => (
-                      <li key={index} className="flex items-start">
-                        <span className="text-primary mr-2">•</span>
-                        <span className="text-muted-foreground">{rule}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <ul className="space-y-2">{raffle.description}</ul>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Right Column - Participation Info */}
+            {/* Right Column */}
             <div className="space-y-6">
-              {/* Prize Amount */}
               <Card className="border-primary/20">
                 <CardContent className="p-6 text-center">
                   <div className="text-4xl font-bold text-primary mb-2">
-                    {raffleData.prizeAmount} ETH
+                    {raffle.prizeAmount} ETH
                   </div>
                   <div className="text-muted-foreground">
                     Total Prize Amount
@@ -233,24 +204,21 @@ export default function RaffleDetailPage({
                 </CardContent>
               </Card>
 
-              {/* Progress */}
               <Card className="border-primary/20">
                 <CardHeader>
                   <CardTitle className="text-lg">Funding Progress</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ProgressBar
-                    current={raffleData.currentAmount}
-                    target={raffleData.targetAmount}
-                    minimumValue={
-                      raffleData.minimumTickets * raffleData.ticketPrice
-                    }
+                    participants={raffle.participants}
+                    ticketPrice={raffle.ticketPrice}
+                    targetAmount={raffle.targetAmount}
+                    prizeAmount={raffle.prizeAmount}
                     className="mb-4"
                   />
                 </CardContent>
               </Card>
 
-              {/* Ticket Purchase */}
               <Card className="border-tertiary/20">
                 <CardHeader>
                   <CardTitle className="text-tertiary">
@@ -260,7 +228,7 @@ export default function RaffleDetailPage({
                 <CardContent className="space-y-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-tertiary">
-                      {raffleData.ticketPrice} ETH
+                      {raffle.ticketPrice} ETH
                     </div>
                     <div className="text-sm text-muted-foreground">
                       Per Ticket
@@ -273,8 +241,8 @@ export default function RaffleDetailPage({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleQuantityChange(ticketQuantity - 1)}
-                        disabled={ticketQuantity <= 1}
+                        onClick={() => handleQuantityChange(quantity - 1)}
+                        disabled={quantity <= 1}
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
@@ -282,20 +250,18 @@ export default function RaffleDetailPage({
                         id="quantity"
                         type="number"
                         min="1"
-                        max={maxTickets}
-                        value={ticketQuantity}
+                        max={raffle.maxTickets}
+                        value={quantity}
                         onChange={(e) =>
-                          handleQuantityChange(
-                            Number.parseInt(e.target.value) || 1
-                          )
+                          handleQuantityChange(parseInt(e.target.value))
                         }
                         className="text-center input-focus"
                       />
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleQuantityChange(ticketQuantity + 1)}
-                        disabled={ticketQuantity >= maxTickets}
+                        onClick={() => handleQuantityChange(quantity + 1)}
+                        disabled={quantity >= raffle.maxTickets}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -309,23 +275,6 @@ export default function RaffleDetailPage({
                     </div>
                   </div>
 
-                  {/* Buyer's Wallet Address */}
-                  <div className="space-y-2">
-                    <Label htmlFor="buyerWallet">
-                      Your Ethereum Wallet Address
-                    </Label>
-                    <div className="relative">
-                      <Wallet className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                      <Input
-                        id="buyerWallet"
-                        value={buyerWallet}
-                        onChange={(e) => setBuyerWallet(e.target.value)}
-                        placeholder="0x..."
-                        className="pl-10 input-focus"
-                      />
-                    </div>
-                  </div>
-
                   {error && (
                     <p className="text-red-500 text-sm flex items-center gap-1">
                       <AlertCircle className="h-4 w-4" />
@@ -334,38 +283,29 @@ export default function RaffleDetailPage({
                   )}
 
                   <Button
-                    onClick={handleBuyTicket}
+                    onClick={handleBuy}
                     className="w-full bg-tertiary hover:bg-tertiary/90 text-lg py-6"
-                    disabled={maxTickets === 0 || timeLeft === "Ended"}
+                    disabled={raffleEnded || raffle.maxTickets === 0}
                   >
-                    {timeLeft === "Ended"
+                    {raffleEnded
                       ? "Raffle Ended"
-                      : maxTickets === 0
+                      : raffle.maxTickets === 0
                       ? "Sold Out"
                       : "Purchase Tickets"}
                   </Button>
                 </CardContent>
               </Card>
 
-              {isOwner && (
-                <Button variant="destructive" onClick={handleDelete}>
-                  Deletar Rifa
-                </Button>
-              )}
-
-              {/* Stats */}
               <Card className="border-primary/20">
                 <CardContent className="p-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <Users className="h-5 w-5 text-primary mr-2" />
                       <span className="text-muted-foreground">
-                        Participants
+                        Tickets purchased
                       </span>
                     </div>
-                    <span className="font-semibold">
-                      {raffleData.participants.toLocaleString()}
-                    </span>
+                    <span className="font-semibold">{raffle.participants}</span>
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -374,7 +314,7 @@ export default function RaffleDetailPage({
                       <span className="text-muted-foreground">End Date</span>
                     </div>
                     <span className="font-semibold">
-                      {new Date(raffleData.endDate).toLocaleDateString()}
+                      {new Date(raffle.endDate).toLocaleDateString()}
                     </span>
                   </div>
 
@@ -386,13 +326,12 @@ export default function RaffleDetailPage({
                       </span>
                     </div>
                     <span className="font-semibold">
-                      {raffleData.minimumTickets}
+                      {(raffle.prizeAmount * 1.1) / raffle.ticketPrice}
                     </span>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Time Remaining */}
               <Card className="border-secondary/20">
                 <CardContent className="p-6 text-center">
                   <Clock className="h-8 w-8 text-secondary mx-auto mb-2" />
