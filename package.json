@@ -10,7 +10,7 @@
     "compile": "npx hardhat compile",
     "node": "npx hardhat node",
     "deploy": "npx hardhat run scripts/deploy.cjs --network localhost",
-    "extract": "node scripts/extract-abi.cjs"
+    "extract-abi": "node scripts/extract-abi.cjs"
   },
   "dependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.1.0",
