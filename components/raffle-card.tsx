@@ -1,24 +1,24 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { ProgressBar } from "./progress-bar"
-import { Users, Ticket, Clock } from "lucide-react"
-import { useState, useEffect } from "react"
-import { formatNumberSimple } from "@/lib/utils"
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { ProgressBar } from "./progress-bar";
+import { Users, Ticket, Clock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { formatNumberSimple } from "@/lib/utils";
 
 interface RaffleCardProps {
-  id: string
-  title: string
-  image: string
-  prizeAmount: number
-  currentAmount: number
-  targetAmount: number
-  minimumValue: number
-  ticketPrice: number
-  participants: number
-  category: string
-  endDate?: string
+  id: string;
+  title: string;
+  image: string;
+  prizeAmount: number;
+  currentAmount: number;
+  targetAmount: number;
+  minimumValue: number;
+  ticketPrice: number;
+  participants: number;
+  category: string;
+  endDate?: string;
 }
 
 export function RaffleCard({
@@ -34,45 +34,49 @@ export function RaffleCard({
   category,
   endDate = "2024-04-15T23:59:59",
 }: RaffleCardProps) {
-  const [timeLeft, setTimeLeft] = useState("")
-  const [mounted, setMounted] = useState(false)
+  const [timeLeft, setTimeLeft] = useState("");
+  const [mounted, setMounted] = useState(false);
 
   // Fix hydration by only rendering after mount
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      const endDateTime = new Date(endDate)
-      const now = new Date()
-      const difference = endDateTime.getTime() - now.getTime()
+      const endDateTime = new Date(endDate);
+      const now = new Date();
+      const difference = endDateTime.getTime() - now.getTime();
 
       if (difference > 0) {
-        const days = Math.floor(difference / (1000 * 60 * 60 * 24))
-        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60))
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor(
+          (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+        );
+        const minutes = Math.floor(
+          (difference % (1000 * 60 * 60)) / (1000 * 60)
+        );
 
         if (days > 0) {
-          setTimeLeft(`${days}d ${hours}h`)
+          setTimeLeft(`${days}d ${hours}h`);
         } else if (hours > 0) {
-          setTimeLeft(`${hours}h ${minutes}m`)
+          setTimeLeft(`${hours}h ${minutes}m`);
         } else {
-          setTimeLeft(`${minutes}m`)
+          setTimeLeft(`${minutes}m`);
         }
       } else {
-        setTimeLeft("Ended")
+        setTimeLeft("Ended");
       }
-    }
+    };
 
     if (mounted) {
-      calculateTimeLeft()
-      const timer = setInterval(calculateTimeLeft, 60000) // Update every minute
-      return () => clearInterval(timer)
+      calculateTimeLeft();
+      const timer = setInterval(calculateTimeLeft, 60000); // Update every minute
+      return () => clearInterval(timer);
     }
-  }, [endDate, mounted])
+  }, [endDate, mounted]);
 
-  const displayImage = image || "/placeholder.svg?height=200&width=300&text=👋"
+  const displayImage = image || "/placeholder.svg?height=200&width=300&text=👋";
 
   // Don't render dynamic content until mounted
   if (!mounted) {
@@ -103,22 +107,25 @@ export function RaffleCard({
                   <div className="text-2xl font-bold text-primary group-hover:text-tertiary mb-1 transition-colors duration-300">
                     {prizeAmount} ETH
                   </div>
-                  <div className="text-sm text-muted-foreground">Prize Amount</div>
+                  <div className="text-sm text-muted-foreground">
+                    Prize Amount
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="flex items-center gap-1 text-lg font-semibold text-secondary group-hover:text-tertiary transition-colors duration-300">
                     <Ticket className="h-4 w-4" />
                     {ticketPrice} ETH
                   </div>
-                  <div className="text-sm text-muted-foreground">Per Ticket</div>
+                  <div className="text-sm text-muted-foreground">
+                    Per Ticket
+                  </div>
                 </div>
               </div>
-              <ProgressBar current={currentAmount} target={targetAmount} minimumValue={minimumValue} className="mb-2" />
             </div>
           </CardContent>
         </Card>
       </Link>
-    )
+    );
   }
 
   return (
@@ -154,7 +161,9 @@ export function RaffleCard({
                 <div className="text-2xl font-bold text-primary group-hover:text-tertiary mb-1 transition-colors duration-300">
                   {prizeAmount} ETH
                 </div>
-                <div className="text-sm text-muted-foreground">Prize Amount</div>
+                <div className="text-sm text-muted-foreground">
+                  Prize Amount
+                </div>
               </div>
 
               <div className="text-right">
@@ -166,10 +175,27 @@ export function RaffleCard({
               </div>
             </div>
 
-            <ProgressBar current={currentAmount} target={targetAmount} minimumValue={minimumValue} className="mb-2" />
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <div className="text-1xl font-bold text-primary group-hover:text-tertiary mb-1 transition-colors duration-300">
+                  {participants * ticketPrice} ETH
+                </div>
+                <div className="text-sm text-muted-foreground">Purchased</div>
+              </div>
+
+              <div className="text-right">
+                <div className="flex items-center gap-1 text-1xl font-semibold text-secondary group-hover:text-tertiary transition-colors duration-300">
+                  {participants * ticketPrice < prizeAmount
+                    ? prizeAmount
+                    : "Goal Reach"}{" "}
+                  ETH
+                </div>
+                <div className="text-sm text-muted-foreground">To Reach</div>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
     </Link>
-  )
+  );
 }

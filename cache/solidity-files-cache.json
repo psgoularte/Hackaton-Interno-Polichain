@@ -1,9 +1,46 @@
 {
   "_format": "hh-sol-cache-2",
   "files": {
-    "C:\\Users\\sgoul\\Documents\\Projetos Hackatons\\polichain_interno\\contracts\\RaffleManager.sol": {
-      "lastModificationDate": 1753838805394,
-      "contentHash": "7edb269e6d0fdd8cd45334fb8ea6e5e6",
+    "C:\\Users\\sgoul\\Documents\\Polichain\\polichain_interno\\contracts\\Raffle-Factory.sol": {
+      "lastModificationDate": 1753919424221,
+      "contentHash": "0c826aa64d8efbd39e1dde59c4f79dd3",
+      "sourceName": "contracts/Raffle-Factory.sol",
+      "solcConfig": {
+        "version": "0.8.19",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./RaffleManager.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.19"
+      ],
+      "artifacts": [
+        "AutoRaffleFactory"
+      ]
+    },
+    "C:\\Users\\sgoul\\Documents\\Polichain\\polichain_interno\\contracts\\RaffleManager.sol": {
+      "lastModificationDate": 1753919454315,
+      "contentHash": "a893c6de221f8c5d085186a2f52e3fca",
       "sourceName": "contracts/RaffleManager.sol",
       "solcConfig": {
         "version": "0.8.19",
@@ -30,7 +67,7 @@
       },
       "imports": [],
       "versionPragmas": [
-        "^0.8.0"
+        "^0.8.19"
       ],
       "artifacts": [
         "AutoRaffle"

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 contract AutoRaffle {
     address public owner;
@@ -124,6 +124,11 @@ contract AutoRaffle {
             _refundRaffle();
         }
     }
+
+    function transferOwnership(address newOwner) external onlyOwner {
+    require(newOwner != address(0), "Invalid owner address");
+    owner = newOwner;
+}
     
     function _completeRaffle() internal {
     // Sorteia o vencedor

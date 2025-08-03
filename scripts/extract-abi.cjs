@@ -1,14 +1,22 @@
-// scripts/extract-abi.cjs
 const fs = require("fs");
 const path = require("path");
 
-// Configuração dos contratos
+// Configuração dos contratos - caminhos corrigidos
 const CONTRACTS_CONFIG = [
   {
-    name: "RaffleManager",
-    artifact: "../artifacts/contracts/RaffleManager.sol/RaffleManager.json",
+    name: "AutoRaffle",
+    artifact: path.join(
+      __dirname,
+      "../artifacts/contracts/RaffleManager.sol/AutoRaffle.json"
+    ),
   },
-  // Adicione outros contratos aqui se necessário
+  {
+    name: "AutoRaffleFactory",
+    artifact: path.join(
+      __dirname,
+      "../artifacts/contracts/Raffle-Factory.sol/AutoRaffleFactory.json"
+    ),
+  },
 ];
 
 async function generateContractsFile() {
@@ -18,7 +26,14 @@ async function generateContractsFile() {
   // Processa cada contrato
   for (const contract of CONTRACTS_CONFIG) {
     try {
-      const artifactPath = path.join(__dirname, contract.artifact);
+      const artifactPath = path.resolve(contract.artifact);
+
+      // Verifica se o arquivo existe
+      if (!fs.existsSync(artifactPath)) {
+        console.warn(`⚠️ Arquivo não encontrado: ${artifactPath}`);
+        continue;
+      }
+
       const { abi } = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
 
       fileContent += `export const ${contract.name}ABI = ${JSON.stringify(
