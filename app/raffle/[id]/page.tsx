@@ -24,7 +24,6 @@ import {
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
-import { ProgressBar } from "@/components/progress-bar";
 
 export default function RaffleDetailPage() {
   const { id } = useParams();
@@ -139,8 +138,47 @@ export default function RaffleDetailPage() {
       functionName: "claimRefund",
     });
   };
+  const { writeContract: finalizeRaffle, isPending: isFinalizing } =
+    useWriteContract();
 
-  if (!raffle) return <div className="p-4">Carregando...</div>;
+  const { writeContractAsync } = useWriteContract();
+
+  // Função unificada para finalizar E reivindicar refund
+  const handleFinalizeAndRefund = async () => {
+    try {
+      // 1. Finaliza o raffle
+      await writeContractAsync({
+        address: raffle.address as `0x${string}`,
+        abi: raffleABI,
+        functionName: "finalizeRaffle",
+      });
+
+      // 2. Claim refund (executado apenas se a primeira transação for bem-sucedida)
+      await writeContractAsync({
+        address: raffle.address as `0x${string}`,
+        abi: raffleABI,
+        functionName: "claimRefund",
+      });
+    } catch (error) {
+      console.error("Error in transaction:", error);
+    }
+  };
+
+  if (!raffle)
+    return (
+      <div>
+        <Navbar></Navbar>
+        <div className="fixed inset-0 flex items-center justify-center bg-background/80 z-50">
+          <div className="flex flex-col items-center gap-2">
+            {/* Spinner (usando as cores do seu tema) */}
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+
+            {/* Texto "Loading" com a cor primary (green-500) */}
+            <p className="text-primary font-medium">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
 
   const totalCost = Number(raffle.ticketPrice) * quantity;
 
@@ -189,6 +227,28 @@ export default function RaffleDetailPage() {
                   <ul className="space-y-2">{raffle.description}</ul>
                 </CardContent>
               </Card>
+              <div className="pt-10"></div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-primary">Allert:</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    The button below allows you to claim a refund if the raffle
+                    ended without reaching its minimal of tickets. You'll need
+                    to confirm two transactions to get your funds back. Note:
+                    One of them might fail.
+                  </ul>
+                </CardContent>
+              </Card>
+              <div className="space-y-4 mt-6">
+                <Button
+                  onClick={handleFinalizeAndRefund}
+                  className="bg-primary text-primary-foreground hover:bg-emerald-600 transition-colors font-medium px-4 py-2 rounded-lg w-full"
+                >
+                  Claim Refund
+                </Button>
+              </div>
             </div>
 
             {/* Right Column */}
@@ -209,13 +269,29 @@ export default function RaffleDetailPage() {
                   <CardTitle className="text-lg">Funding Progress</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ProgressBar
-                    participants={raffle.participants}
-                    ticketPrice={raffle.ticketPrice}
-                    targetAmount={raffle.targetAmount}
-                    prizeAmount={raffle.prizeAmount}
-                    className="mb-4"
-                  />
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <div className="text-1xl font-bold text-primary group-hover:text-tertiary mb-1 transition-colors duration-300">
+                        {raffle.participants * raffle.ticketPrice} ETH
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Purchased
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="flex items-center gap-1 text-1xl font-semibold text-secondary group-hover:text-tertiary transition-colors duration-300">
+                        {raffle.participants * raffle.ticketPrice <
+                        raffle.prizeAmount
+                          ? raffle.prizeAmount
+                          : "Goal Reach"}{" "}
+                        ETH
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        To Reach
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -271,7 +347,7 @@ export default function RaffleDetailPage() {
                   <div className="text-center p-4 bg-accent rounded-lg">
                     <div className="text-lg font-semibold">Total Cost</div>
                     <div className="text-2xl font-bold text-tertiary">
-                      {totalCost.toFixed(3)} ETH
+                      {totalCost.toFixed(5)} ETH
                     </div>
                   </div>
 
@@ -326,7 +402,9 @@ export default function RaffleDetailPage() {
                       </span>
                     </div>
                     <span className="font-semibold">
-                      {(raffle.prizeAmount * 1.1) / raffle.ticketPrice}
+                      {Math.ceil(
+                        (raffle.prizeAmount * 1.1) / raffle.ticketPrice
+                      )}
                     </span>
                   </div>
                 </CardContent>
