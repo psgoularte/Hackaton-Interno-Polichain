@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { ProgressBar } from "./progress-bar"
-import { Users, Ticket, Clock } from "lucide-react"
-import { useState, useEffect } from "react"
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { ProgressBar } from "./progress-bar";
+import { Users, Ticket, Clock } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface PrizeDrawCardProps {
-  id: string
-  title: string
-  image: string
-  prizeAmount: number
-  currentAmount: number
-  targetAmount: number
-  minimumValue: number
-  ticketPrice: number
-  participants: number
-  category: string
-  endDate?: string
+  id: string;
+  title: string;
+  image: string;
+  prizeAmount: number;
+  currentAmount: number;
+  targetAmount: number;
+  minimumValue: number;
+  ticketPrice: number;
+  participants: number;
+  category: string;
+  endDate?: string;
 }
 
 export function PrizeDrawCard({
@@ -33,38 +33,42 @@ export function PrizeDrawCard({
   category,
   endDate = "2024-04-15T23:59:59",
 }: PrizeDrawCardProps) {
-  const [timeLeft, setTimeLeft] = useState("")
+  const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
     const calculateTimeLeft = () => {
-      const endDateTime = new Date(endDate)
-      const now = new Date()
-      const difference = endDateTime.getTime() - now.getTime()
+      const endDateTime = new Date(endDate);
+      const now = new Date();
+      const difference = endDateTime.getTime() - now.getTime();
 
       if (difference > 0) {
-        const days = Math.floor(difference / (1000 * 60 * 60 * 24))
-        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60))
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor(
+          (difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+        );
+        const minutes = Math.floor(
+          (difference % (1000 * 60 * 60)) / (1000 * 60)
+        );
 
         if (days > 0) {
-          setTimeLeft(`${days}d ${hours}h`)
+          setTimeLeft(`${days}d ${hours}h`);
         } else if (hours > 0) {
-          setTimeLeft(`${hours}h ${minutes}m`)
+          setTimeLeft(`${hours}h ${minutes}m`);
         } else {
-          setTimeLeft(`${minutes}m`)
+          setTimeLeft(`${minutes}m`);
         }
       } else {
-        setTimeLeft("Ended")
+        setTimeLeft("Ended");
       }
-    }
+    };
 
-    calculateTimeLeft()
-    const timer = setInterval(calculateTimeLeft, 60000) // Update every minute
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 60000); // Update every minute
 
-    return () => clearInterval(timer)
-  }, [endDate])
+    return () => clearInterval(timer);
+  }, [endDate]);
 
-  const displayImage = image || "/placeholder.svg?height=200&width=300&text=👋"
+  const displayImage = image || "/placeholder.svg?height=200&width=300&text=👋";
 
   return (
     <Link href={`/prize-draw/${id}`}>
@@ -99,7 +103,9 @@ export function PrizeDrawCard({
                 <div className="text-2xl font-bold text-primary group-hover:text-tertiary mb-1 transition-colors duration-300">
                   ${prizeAmount.toLocaleString()}
                 </div>
-                <div className="text-sm text-muted-foreground">Prize Amount</div>
+                <div className="text-sm text-muted-foreground">
+                  Prize Amount
+                </div>
               </div>
 
               <div className="text-right">
@@ -109,11 +115,9 @@ export function PrizeDrawCard({
                 <div className="text-sm text-muted-foreground">Per Ticket</div>
               </div>
             </div>
-
-            <ProgressBar current={currentAmount} target={targetAmount} minimumValue={minimumValue} className="mb-2" />
           </div>
         </CardContent>
       </Card>
     </Link>
-  )
+  );
 }
