@@ -51,7 +51,6 @@ export async function PUT(req: NextRequest) {
       updateData.address = formData.get("address")?.toString();
     if (formData.get("ticketPrice"))
       updateData.ticketPrize = BigInt(formData.get("ticketPrice")!.toString());
-
     if (formData.get("prizeValue"))
       updateData.prizeValue = BigInt(formData.get("prizeValue")!.toString());
     if (formData.get("duration"))
